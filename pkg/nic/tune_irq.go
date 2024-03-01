@@ -42,35 +42,24 @@ func TuneNICIRQ(eth string, cpus *cpu.Info, dryrun bool, opt *option.Option) (er
 
 		if numIRQ == numCore {
 			desiredAffinity = cores
-		} else {
-			if numIRQ < numCore/2 {
-				cores = util.GetCoreList(cpus, numa, true)
-				if (numCore/2)%numIRQ == 0 {
-					q := (numCore / 2) / numIRQ
-					for i := 0; i < numIRQ; i++ {
-						desiredAffinity = append(desiredAffinity, cores[i*q])
-					}
+		} else if numIRQ < numCore {
+			if numCore%numIRQ == 0 {
+				q := numCore / numIRQ
+				for i := 0; i < numIRQ; i++ {
+					desiredAffinity = append(desiredAffinity, cores[i*q])
 				}
-				desiredAffinity = cores[:numIRQ]
-			} else if numIRQ < numCore {
-				if numCore%numIRQ == 0 {
-					q := numCore / numIRQ
-					for i := 0; i < numIRQ; i++ {
-						desiredAffinity = append(desiredAffinity, cores[i*q])
-					}
-				}
-				desiredAffinity = cores[:numIRQ]
-			} else { // irqCount > cpuCount
-				desiredAffinity := make([]int, 0)
-				for {
-					diff := numIRQ - len(desiredAffinity)
-					if diff > len(cores) {
-						desiredAffinity = append(desiredAffinity, cores...)
-					} else if diff > 0 {
-						desiredAffinity = append(desiredAffinity, cores[:diff]...)
-					} else {
-						break
-					}
+			}
+			desiredAffinity = cores[:numIRQ]
+		} else { // irqCount > cpuCount
+			desiredAffinity := make([]int, 0)
+			for {
+				diff := numIRQ - len(desiredAffinity)
+				if diff > len(cores) {
+					desiredAffinity = append(desiredAffinity, cores...)
+				} else if diff > 0 {
+					desiredAffinity = append(desiredAffinity, cores[:diff]...)
+				} else {
+					break
 				}
 			}
 		}
