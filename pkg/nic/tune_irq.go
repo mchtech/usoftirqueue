@@ -2,12 +2,18 @@ package nic
 
 import (
 	"fmt"
+	"sync"
 	"usoftirqueue/pkg/option"
 	"usoftirqueue/pkg/util"
 
 	"github.com/jaypipes/ghw/pkg/cpu"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
+)
+
+var (
+	once      sync.Once
+	biterator *util.BiasIterator[int]
 )
 
 func TuneNICIRQ(eth string, cpus *cpu.Info, dryrun bool, opt *option.Option) (err error) {
@@ -29,35 +35,39 @@ func TuneNICIRQ(eth string, cpus *cpu.Info, dryrun bool, opt *option.Option) (er
 	}
 
 	if opt.CPUSelectPolicy == option.CPUSelectPolicyFromIterator {
-		desiredAffinity = util.GetCoreListByIterator(
-			cpus, numa, false, numIRQ,
-		)
+		desiredAffinity = util.GetCoreListByIterator(cpus, numa, false, numIRQ)
 	} else {
 
 		numCore := numCPU
 		if numa >= 0 {
 			numCore = int(cpus.Processors[0].NumThreads)
 		}
+
 		cores := util.GetCoreList(cpus, numa, false)
+		once.Do(func() {
+			biterator = util.NewBiasIterator(cores)
+		})
 
 		if numIRQ == numCore {
 			desiredAffinity = cores
 		} else if numIRQ < numCore {
 			if numCore%numIRQ == 0 {
-				q := numCore / numIRQ
-				for i := 0; i < numIRQ; i++ {
-					desiredAffinity = append(desiredAffinity, cores[i*q])
-				}
+				desiredAffinity = append(desiredAffinity, biterator.Interval(numCore/numIRQ).Generate(numIRQ)...)
+			} else {
+				desiredAffinity = append(desiredAffinity, biterator.Interval(1).Generate(numIRQ)...)
 			}
-			desiredAffinity = cores[:numIRQ]
-		} else { // irqCount > cpuCount
+		} else {
 			desiredAffinity := make([]int, 0)
 			for {
 				diff := numIRQ - len(desiredAffinity)
 				if diff > len(cores) {
 					desiredAffinity = append(desiredAffinity, cores...)
 				} else if diff > 0 {
-					desiredAffinity = append(desiredAffinity, cores[:diff]...)
+					if numCore%diff == 0 {
+						desiredAffinity = append(desiredAffinity, biterator.Interval(numCore/diff).Generate(diff)...)
+					} else {
+						desiredAffinity = append(desiredAffinity, biterator.Interval(1).Generate(diff)...)
+					}
 				} else {
 					break
 				}
