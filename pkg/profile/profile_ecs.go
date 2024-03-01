@@ -13,7 +13,7 @@ func (p *Profile) SetupECS() (err error) {
 	if numCPU > p.largeNode {
 		return p.policies[policy.Isolate](
 			// option.WithCPUSelectPolicy(option.CPUSelectPolicyFromFirstCore), // default
-			// option.WithCPUSelectMask(option.CPUSelectMaskAuto), // default
+			// option.WithCPUSelectMask(option.CPUSelectMaskAll),               // default
 			option.WithFlowMode(option.FlowModeSplitMainNIC),
 		).Apply()
 	}
@@ -22,7 +22,7 @@ func (p *Profile) SetupECS() (err error) {
 	if numCPU&(numCPU-1) != 0 {
 		return p.policies[policy.Isolate](
 			// option.WithCPUSelectPolicy(option.CPUSelectPolicyFromFirstCore), // default
-			// option.WithCPUSelectMask(option.CPUSelectMaskAuto), // default
+			// option.WithCPUSelectMask(option.CPUSelectMaskAll),               // default
 			option.WithFlowMode(option.FlowModeSplitMainNIC),
 		).Apply()
 	}

@@ -10,9 +10,8 @@ const (
 type CPUSelectMask int
 
 const (
-	CPUSelectMaskAuto      CPUSelectMask = 0x0 // select cores according to num irq (default)
-	CPUSelectMaskAll       CPUSelectMask = 0x1 // select all cores
-	CPUSelectMaskLocalNUMA CPUSelectMask = 0x2 // select local numa cores
+	CPUSelectMaskAll       CPUSelectMask = iota // select all cores
+	CPUSelectMaskLocalNUMA                      // select local numa cores
 )
 
 type FlowMode int

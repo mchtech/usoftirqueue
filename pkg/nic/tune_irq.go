@@ -18,9 +18,14 @@ func TuneNICIRQ(eth string, cpus *cpu.Info, dryrun bool, opt *option.Option) (er
 	numIRQ := len(irqs)
 	numCPU := int(cpus.TotalThreads)
 
-	numa := -1
-	if opt.CPUSelectMask == option.CPUSelectMaskAuto || opt.CPUSelectMask&option.CPUSelectMaskLocalNUMA == 1 {
+	var numa int
+	switch opt.CPUSelectMask {
+	case option.CPUSelectMaskLocalNUMA:
 		numa = irqs[0].NUMA
+	case option.CPUSelectMaskAll:
+		numa = -1
+	default:
+		return fmt.Errorf("unknown CPUSelectMask: %d", opt.CPUSelectMask)
 	}
 
 	if opt.CPUSelectPolicy == option.CPUSelectPolicyFromIterator {
@@ -30,7 +35,7 @@ func TuneNICIRQ(eth string, cpus *cpu.Info, dryrun bool, opt *option.Option) (er
 	} else {
 
 		numCore := numCPU
-		if numa != -1 {
+		if numa >= 0 {
 			numCore = int(cpus.Processors[0].NumThreads)
 		}
 		cores := util.GetCoreList(cpus, numa, false)
