@@ -6,8 +6,17 @@ import (
 	"k8s.io/klog/v2"
 )
 
+var DryRun bool
+
 func Write(file, value string) error {
-	klog.InfoS("write system config", "key", file, "value", value)
+
+	if DryRun {
+		klog.InfoS("dryrun mode: skip to write system config", "key", file, "value", value)
+		return nil
+	} else {
+		klog.InfoS("write system config", "key", file, "value", value)
+	}
+
 	h, err := os.OpenFile(file, os.O_WRONLY, 0)
 	if err != nil {
 		return err

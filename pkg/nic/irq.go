@@ -38,7 +38,7 @@ func (l IRQList) IRQs() (q []int) {
 
 var IRQFilters = map[string]*regexp.Regexp{
 	"mlx5_core":  regexp.MustCompile(`mlx5_comp[0-9]+@pci:.+`),
-	"virtio_net": regexp.MustCompile(`virtio[0-9]+-(in|out)put[]].[0-9]+`),
+	"virtio_net": regexp.MustCompile(`virtio[0-9]+-(in|out)put[.][0-9]+`),
 }
 
 func UpdateIRQFilter(driver, regex string) {
@@ -121,6 +121,7 @@ func getNICIRQ(nic string) (irqs IRQList) {
 	for _, p := range irqNumsPath {
 		irqNums = append(irqNums, filepath.Base(p))
 	}
+	klog.InfoS("get irqs", "nic", nic, "irqs", irqNums)
 
 	// get irq info
 	for _, irqNum := range irqNums {
@@ -128,6 +129,7 @@ func getNICIRQ(nic string) (irqs IRQList) {
 		irq.NIC = nic
 		irq.Driver = drv
 		irq.Device = dev
+		// klog.InfoS("get irq", "nic", nic, "irq", irq)
 		if filter != nil {
 			for _, name := range irq.Names {
 				if filter.MatchString(name) {

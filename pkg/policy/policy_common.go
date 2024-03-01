@@ -16,7 +16,7 @@ type CommonPolicy struct {
 	// interface
 	name string
 	// params
-	dryrun bool
+	dryrun, dryrunQueue bool
 	// vars
 	cpus *cpu.Info
 	nics []string
@@ -24,13 +24,15 @@ type CommonPolicy struct {
 	option *option.Option
 }
 
-func NewCommonPolicy(dryrun bool, cpu *cpu.Info, nics []string, opts ...option.OptionFunc) Policy {
+func NewCommonPolicy(dryrun, dryrunQueue bool, cpu *cpu.Info, nics []string, opts ...option.OptionFunc) Policy {
 	return &CommonPolicy{
 		name:   Common,
 		dryrun: dryrun,
 		cpus:   cpu,
 		nics:   nics,
 		option: option.ParseOptions(opts...),
+
+		dryrunQueue: dryrunQueue,
 	}
 }
 
@@ -54,14 +56,14 @@ func (p *CommonPolicy) Apply() (err error) {
 
 	klog.InfoS("apply policy", "name", p.Name())
 
-	if p.dryrun {
+	if p.dryrun && !p.dryrunQueue {
 		klog.Warning("in order to get all IRQs, NIC queue needs to tuned first: ignore `-dryrun` param in this step")
 	}
 
 	for _, eth := range p.nics {
 
 		// tune NIC queue channel to max
-		if err = nic.TuneNICQueueChannelMax(p.cpus.Processors[0].NumThreads, p.cpus.TotalThreads, eth, false); err != nil {
+		if err = nic.TuneNICQueueChannelMax(p.cpus.Processors[0].NumThreads, p.cpus.TotalThreads, eth, p.dryrunQueue); err != nil {
 			klog.ErrorS(err, "failed to tune NIC queue channel", "nic", eth)
 			break
 		}

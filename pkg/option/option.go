@@ -15,9 +15,18 @@ const (
 	CPUSelectMaskLocalNUMA CPUSelectMask = 0x2 // select local numa cores
 )
 
+type FlowMode int
+
+const (
+	FlowModeFromOneOfNIC  FlowMode = iota // rx from one of all NICs
+	FlowModeSplitMainNIC                  // rx from main NIC and other NICs (k8s ecs/ebm: hostNetwork: eth0, CNI Network: eth1..ethx)
+	FlowModeAvgFromAllNIC                 // rx from all NICs avg
+)
+
 type Option struct {
 	CPUSelectPolicy   CPUSelectPolicy
 	CPUSelectMask     CPUSelectMask
+	FlowMode          FlowMode
 	ExpectConnections int
 }
 
@@ -40,6 +49,12 @@ func WithCPUSelectPolicy(p CPUSelectPolicy) OptionFunc {
 func WithCPUSelectMask(m CPUSelectMask) OptionFunc {
 	return func(opt *Option) {
 		opt.CPUSelectMask = m
+	}
+}
+
+func WithFlowMode(m FlowMode) OptionFunc {
+	return func(opt *Option) {
+		opt.FlowMode = m
 	}
 }
 

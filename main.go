@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"time"
+	"usoftirqueue/pkg/config"
 	"usoftirqueue/pkg/policy"
 	"usoftirqueue/pkg/profile"
 	"usoftirqueue/pkg/system"
@@ -20,6 +21,7 @@ var (
 	nicPolicy         = Auto
 	nicRegex          = `^eth[\d]+`
 	dryrun            = false
+	dryrunQueue       = false
 	largeNode         = 16
 	expectConnections = 0
 )
@@ -38,15 +40,18 @@ func main() {
 	flag.Set("log_file", logFile)
 	flag.Set("alsologtostderr", "true")
 
-	flag.StringVar(&nicPolicy, "usoftirqueue.policy", Auto, "spread | isolate")
-	flag.BoolVar(&dryrun, "usoftirqueue.dry-run", false, "dry run")
-	flag.StringVar(&nicRegex, "usoftirqueue.nic-filter", nicRegex, "nic regex")
-	flag.IntVar(&largeNode, "usoftirqueue.large-node-threshold", largeNode, "machine is considered as a large node, if cpu core count >")
-	flag.IntVar(&expectConnections, "usoftirqueue.expect-connections", expectConnections, fmt.Sprintf("estimated max connections that the node can process concurrently (default num-cpu:connections=%v)", policy.CoreToConnections))
-	flag.IntVar(&policy.BaseConnectionsPerCore, "usoftirqueue.connections-per-core", policy.BaseConnectionsPerCore, "connections per cpu core (only valid when num-cpu does not exist in `num-cpu:connections` map)")
+	flag.StringVar(&nicPolicy, "option.policy", Auto, "spread | isolate")
+	flag.BoolVar(&dryrun, "option.dry-run", false, "dry run")
+	flag.BoolVar(&dryrunQueue, "option.dry-run.queue", false, "dry run in NIC queue step")
+	flag.StringVar(&nicRegex, "option.nic-filter", nicRegex, "nic regex")
+	flag.IntVar(&largeNode, "option.large-node-threshold", largeNode, "machine is considered as a large node, if cpu core count >")
+	flag.IntVar(&expectConnections, "option.expect-connections", expectConnections, fmt.Sprintf("estimated max connections that the node can process concurrently (default num-cpu:connections=%v)", policy.CoreToConnections))
+	flag.IntVar(&policy.BaseConnectionsPerCore, "option.connections-per-core", policy.BaseConnectionsPerCore, "connections per cpu core (only valid when num-cpu does not exist in `num-cpu:connections` map)")
 	flag.Parse()
 
 	klog.InfoS("starting", "at", time.Now().Format(time.RFC3339Nano))
+
+	config.DryRun = dryrun
 
 	if si, err = system.GetSystemInfo(); err != nil {
 		klog.ErrorS(err, "failed to get system info")
@@ -55,7 +60,7 @@ func main() {
 	klog.InfoS("system info", "chassis", si.ChassisVendor, "product", si.ProductName, "bios", si.BIOSVendor)
 
 	// setup
-	if p, err = profile.New(dryrun, nicRegex, largeNode, expectConnections); err != nil {
+	if p, err = profile.New(dryrun, dryrunQueue, nicRegex, largeNode, expectConnections); err != nil {
 		klog.ErrorS(err, "failed to setup profile")
 		return
 	}

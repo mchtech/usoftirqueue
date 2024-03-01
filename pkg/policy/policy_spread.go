@@ -18,9 +18,9 @@ type SpreadPolicy struct {
 	option *option.Option
 }
 
-func NewSpreadPolicy(dryrun bool, cpu *cpu.Info, nics []string, opts ...option.OptionFunc) Policy {
+func NewSpreadPolicy(dryrun, dryrunQueue bool, cpu *cpu.Info, nics []string, opts ...option.OptionFunc) Policy {
 	return &SpreadPolicy{
-		Policy: NewCommonPolicy(dryrun, cpu, nics),
+		Policy: NewCommonPolicy(dryrun, dryrunQueue, cpu, nics),
 		name:   Spread,
 		option: option.ParseOptions(opts...),
 	}
