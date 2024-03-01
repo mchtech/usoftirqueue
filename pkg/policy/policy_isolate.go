@@ -93,6 +93,7 @@ func (p *IsolatePolicy) apply() (err error) {
 		int(p.CPUs().TotalThreads),
 		p.ExpectConnections(),
 		p.DryRun(),
+		p.option,
 	); err != nil {
 		klog.ErrorS(err, "failed to disable RPS RFS aRFS XPS", "nic", p.NICs())
 		return

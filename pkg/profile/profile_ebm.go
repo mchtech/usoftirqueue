@@ -30,19 +30,23 @@ func (p *Profile) SetupEBM() (err error) {
 		klog.InfoS("num nics > 2",
 			"CPUSelectPolicy", "CPUSelectPolicyFromFirstCore --> CPUSelectPolicyFromIterator",
 			"CPUSelectMask", "CPUSelectMaskAuto --> CPUSelectMaskAll",
+			"FlowMode", "FlowModeFromOneOfNIC --> FlowModeSplitMainNIC",
 		)
 		return p.policies[policy.Isolate](
 			option.WithCPUSelectPolicy(option.CPUSelectPolicyFromIterator),
 			option.WithCPUSelectMask(option.CPUSelectMaskAll),
+			option.WithFlowMode(option.FlowModeSplitMainNIC),
 		).Apply()
 	}
 
 	klog.InfoS("num nics ≤ 2",
 		"CPUSelectPolicy", "CPUSelectPolicyFromFirstCore",
 		"CPUSelectMask", "CPUSelectMaskAuto --> CPUSelectMaskLocalNUMA",
+		"FlowMode", "FlowModeFromOneOfNIC --> FlowModeSplitMainNIC",
 	)
 	return p.policies[policy.Isolate](
 		option.WithCPUSelectPolicy(option.CPUSelectPolicyFromFirstCore),
 		option.WithCPUSelectMask(option.CPUSelectMaskLocalNUMA),
+		option.WithFlowMode(option.FlowModeSplitMainNIC),
 	).Apply()
 }

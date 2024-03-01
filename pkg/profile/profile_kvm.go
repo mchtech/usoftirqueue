@@ -13,6 +13,7 @@ func (p *Profile) SetupKVM() (err error) {
 		return p.policies[policy.Isolate](
 		// option.WithCPUSelectPolicy(option.CPUSelectPolicyFromFirstCore), // default
 		// option.WithCPUSelectMask(option.CPUSelectMaskAuto),              // default
+		// option.WithFlowMode(option.FlowModeFromOneOfNIC), // default
 		).Apply()
 	}
 	// // TODO: check virtio queue
@@ -22,5 +23,6 @@ func (p *Profile) SetupKVM() (err error) {
 	return p.policies[policy.Spread](
 	// option.WithCPUSelectPolicy(option.CPUSelectPolicyFromFirstCore), // default
 	// option.WithCPUSelectMask(option.CPUSelectMaskAuto), // default
+	// option.WithFlowMode(option.FlowModeFromOneOfNIC), // default
 	).Apply()
 }

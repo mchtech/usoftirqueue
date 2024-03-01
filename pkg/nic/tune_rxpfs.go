@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 	"usoftirqueue/pkg/config"
+	"usoftirqueue/pkg/option"
 
 	"k8s.io/klog/v2"
 )
@@ -52,52 +53,86 @@ func DisableRPSRFSXPS(nics []string, dryrun bool) (err error) {
 	return
 }
 
-func EnableRPSRFSXPS(nics []string, cpucount, conncount int, dryrun bool) (err error) {
+func EnableRPSRFSXPS(nics []string, cpucount, conncount int, dryrun bool, opt *option.Option) (err error) {
 
+	// cpu bitmap for RPS
 	cpubm := getCPUBitmap(cpucount)
 	klog.InfoS("get cpu bitmap", "bitmap", cpubm)
 
-	queuecount := 0
-	for _, eth := range nics {
-		if ch, _ := GetNICQueueChannel(eth); ch != nil {
-			if ch.CombinedCount > 0 {
-				queuecount += int(ch.CombinedCount)
-			} else {
-				queuecount += int(ch.RxCount)
-			}
-		}
-	}
-	klog.InfoS("get total queue count", "nics", nics, "queues", queuecount)
-
+	// expecting connections
 	if conncountn2 := roundUpToNearestMultipleOf2(conncount); conncountn2 != conncount {
 		klog.InfoS("round up connection count", "from", conncount, "to", conncountn2)
 		conncount = conncountn2
 	}
-	conncountPerQueue := conncount / queuecount
-	klog.InfoS("get connection count per queue", "nics", nics, "conncount", conncount, "conncountPerQueue", conncountPerQueue)
 
-	cc := strconv.Itoa(conncount)
-	ccpq := strconv.Itoa(conncountPerQueue)
+	// group nics according to flow mode
+	var nicGroups [][]string
+	switch opt.FlowMode {
+	case option.FlowModeAvgFromAllNIC:
+		nicGroups = [][]string{nics}
+	case option.FlowModeFromOneOfNIC:
+		for _, nic := range nics {
+			nicGroups = append(nicGroups, []string{nic})
+		}
+	case option.FlowModeSplitMainNIC:
+		for i, nic := range nics {
+			if i == 0 {
+				nicGroups = append(nicGroups, []string{nic})
+			} else {
+				if len(nicGroups) == 1 {
+					nicGroups = append(nicGroups, []string{})
+				}
+				nicGroups[1] = append(nicGroups[1], nic)
+			}
+		}
+	default:
+		return fmt.Errorf("unknown flow mode %d", opt.FlowMode)
+	}
+	klog.InfoS("get NIC groups", "groups", nicGroups)
 
+	// apply rps_flow_cnt for each nic group
 	klog.InfoS("enable RPS RFS aRFS XPS")
+
+	// enable rfs
+	cc := strconv.Itoa(conncount)
 	err = errors.Join(err, config.Write("/proc/sys/net/core/rps_sock_flow_entries", cc))
-	for _, eth := range nics {
-		if ch, _ := GetNICQueueChannel(eth); ch != nil {
-			for i := 0; i < int(ch.CombinedCount); i++ {
-				err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/rx-%d/rps_cpus", eth, i), cpubm))
-				err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/rx-%d/rps_flow_cnt", eth, i), ccpq))
-				// err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/tx-%d/xps_cpus", eth, i), cpubm))
+
+	// enable rps flow
+	for _, nicGroup := range nicGroups {
+		queuecount := 0
+		for _, eth := range nicGroup {
+			if ch, _ := GetNICQueueChannel(eth); ch != nil {
+				if ch.CombinedCount > 0 {
+					queuecount += int(ch.CombinedCount)
+				} else {
+					queuecount += int(ch.RxCount)
+				}
 			}
-			for i := 0; i < int(ch.RxCount); i++ {
-				err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/rx-%d/rps_cpus", eth, i), cpubm))
-				err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/rx-%d/rps_flow_cnt", eth, i), ccpq))
+		}
+		klog.InfoS("get total queue count", "nicgroup", nicGroup, "queues", queuecount)
+
+		conncountPerQueue := conncount / queuecount
+		ccpq := strconv.Itoa(conncountPerQueue)
+		klog.InfoS("get connection count per queue", "nicgroup", nicGroup, "conncount", conncount, "conncountPerQueue", conncountPerQueue)
+
+		for _, eth := range nicGroup {
+			if ch, _ := GetNICQueueChannel(eth); ch != nil {
+				for i := 0; i < int(ch.CombinedCount); i++ {
+					err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/rx-%d/rps_cpus", eth, i), cpubm))
+					err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/rx-%d/rps_flow_cnt", eth, i), ccpq))
+					// err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/tx-%d/xps_cpus", eth, i), cpubm))
+				}
+				for i := 0; i < int(ch.RxCount); i++ {
+					err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/rx-%d/rps_cpus", eth, i), cpubm))
+					err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/rx-%d/rps_flow_cnt", eth, i), ccpq))
+				}
+				// for i := 0; i < int(ch.TxCount); i++ {
+				// 	err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/tx-%d/xps_cpus", eth, i), cpubm))
+				// }
 			}
-			// for i := 0; i < int(ch.TxCount); i++ {
-			// 	err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/tx-%d/xps_cpus", eth, i), cpubm))
-			// }
 		}
 	}
-	klog.InfoS("finish enabling RPS RFS aRFS XPS")
 
+	klog.InfoS("finish enabling RPS RFS aRFS XPS")
 	return
 }
