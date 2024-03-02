@@ -28,12 +28,12 @@ TODO: other instance type (AMD EPYC: 8 more NUMA nodes)
 func (p *Profile) SetupEBM() (err error) {
 	if len(p.nics) > 2 {
 		klog.InfoS("num nics > 2",
-			"CPUSelectPolicy", "CPUSelectPolicyFromFirstCore --> CPUSelectPolicyFromIterator",
+			"CPUSelectPolicy", "CPUSelectPolicyFromFirstCore --> CPUSelectPolicyFromPreviousCore",
 			"CPUSelectMask", "CPUSelectMaskAuto --> CPUSelectMaskAll",
 			"FlowMode", "FlowModeFromOneOfNIC --> FlowModeSplitMainNIC",
 		)
 		return p.policies[policy.Isolate](
-			option.WithCPUSelectPolicy(option.CPUSelectPolicyFromIterator),
+			option.WithCPUSelectPolicy(option.CPUSelectPolicyFromPreviousCore),
 			option.WithCPUSelectMask(option.CPUSelectMaskAll),
 			option.WithFlowMode(option.FlowModeSplitMainNIC),
 		).Apply()

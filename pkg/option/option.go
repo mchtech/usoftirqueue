@@ -3,8 +3,8 @@ package option
 type CPUSelectPolicy int
 
 const (
-	CPUSelectPolicyFromFirstCore CPUSelectPolicy = iota // select cpus: from first core everytime (default)
-	CPUSelectPolicyFromIterator                         // select cpus: continue from previous core
+	CPUSelectPolicyFromFirstCore    CPUSelectPolicy = iota // select cpus: from first core everytime (default)
+	CPUSelectPolicyFromPreviousCore                        // select cpus: continue from previous core
 )
 
 type CPUSelectMask int

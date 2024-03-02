@@ -13,7 +13,8 @@ import (
 
 var (
 	once      sync.Once
-	biterator *util.BiasIterator[int]
+	biterator *util.AccumulateOffsetIterator[int]
+	citerator *util.CircularIterator[int]
 )
 
 func TuneNICIRQ(eth string, cpus *cpu.Info, dryrun bool, opt *option.Option) (err error) {
@@ -22,7 +23,6 @@ func TuneNICIRQ(eth string, cpus *cpu.Info, dryrun bool, opt *option.Option) (er
 
 	irqs := getNICIRQ(eth)
 	numIRQ := len(irqs)
-	numCPU := int(cpus.TotalThreads)
 
 	var numa int
 	switch opt.CPUSelectMask {
@@ -34,43 +34,37 @@ func TuneNICIRQ(eth string, cpus *cpu.Info, dryrun bool, opt *option.Option) (er
 		return fmt.Errorf("unknown CPUSelectMask: %d", opt.CPUSelectMask)
 	}
 
-	if opt.CPUSelectPolicy == option.CPUSelectPolicyFromIterator {
-		desiredAffinity = util.GetCoreListByIterator(cpus, numa, false, numIRQ)
-	} else {
+	cores := util.GetCoreList(cpus, numa, false)
+	once.Do(func() {
+		citerator = util.NewCircularIterator(cores)
+		biterator = util.NewAccumulateOffsetIterator(cores)
+	})
 
-		numCore := numCPU
+	if opt.CPUSelectPolicy == option.CPUSelectPolicyFromPreviousCore {
+		desiredAffinity = citerator.NextN(numIRQ)
+	} else {
+		// update num core
+		numCore := int(cpus.TotalThreads)
 		if numa >= 0 {
 			numCore = int(cpus.Processors[0].NumThreads)
 		}
-
-		cores := util.GetCoreList(cpus, numa, false)
-		once.Do(func() {
-			biterator = util.NewBiasIterator(cores)
-		})
-
+		// try balance IRQs across cores
 		if numIRQ == numCore {
 			desiredAffinity = cores
 		} else if numIRQ < numCore {
 			if numCore%numIRQ == 0 {
-				desiredAffinity = append(desiredAffinity, biterator.Interval(numCore/numIRQ).Generate(numIRQ)...)
+				desiredAffinity = append(desiredAffinity, biterator.NewInterval(numCore/numIRQ).NextN(numIRQ)...)
 			} else {
-				desiredAffinity = append(desiredAffinity, biterator.Interval(1).Generate(numIRQ)...)
+				desiredAffinity = append(desiredAffinity, biterator.NewInterval(1).NextN(numIRQ)...)
 			}
-		} else {
-			desiredAffinity := make([]int, 0)
-			for {
-				diff := numIRQ - len(desiredAffinity)
-				if diff > len(cores) {
-					desiredAffinity = append(desiredAffinity, cores...)
-				} else if diff > 0 {
-					if numCore%diff == 0 {
-						desiredAffinity = append(desiredAffinity, biterator.Interval(numCore/diff).Generate(diff)...)
-					} else {
-						desiredAffinity = append(desiredAffinity, biterator.Interval(1).Generate(diff)...)
-					}
-				} else {
-					break
-				}
+		} else { // numIRQ > numCore
+			for i := 0; i < numIRQ/numCore; i++ {
+				desiredAffinity = append(desiredAffinity, cores...)
+			}
+			if remain := numIRQ % numCore; numCore%remain == 0 {
+				desiredAffinity = append(desiredAffinity, biterator.NewInterval(numCore/remain).NextN(remain)...)
+			} else {
+				desiredAffinity = append(desiredAffinity, biterator.NewInterval(1).NextN(remain)...)
 			}
 		}
 	}
