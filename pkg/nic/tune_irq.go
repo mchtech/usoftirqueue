@@ -45,9 +45,9 @@ func TuneNICIRQ(eth string, cpus *cpu.Info, dryrun bool, opt *option.Option) (er
 	})
 
 	switch opt.CPUSelectPolicy {
-	case option.CPUSelectPolicyFromPreviousCore:
+	case option.CPUSelectPolicyRoundRobin:
 		desiredAffinity = rr.NextN(numIRQ)
-	case option.CPUSelectPolicyFromFirstCore:
+	case option.CPUSelectPolicyScatter:
 		for i := 0; i < numIRQ/numCore; i++ {
 			desiredAffinity = append(desiredAffinity, cores...)
 		}

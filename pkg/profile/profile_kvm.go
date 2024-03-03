@@ -11,9 +11,9 @@ func (p *Profile) SetupKVM() (err error) {
 	// large node: prefer to redirect softirqs to application cores
 	if numCPU > p.largeNode {
 		return p.policies[policy.Isolate](
-		// option.WithCPUSelectPolicy(option.CPUSelectPolicyFromFirstCore), // default
-		// option.WithCPUSelectMask(option.CPUSelectMaskAll),               // default
-		// option.WithFlowMode(option.FlowModeFromOneOfNIC),                // default
+		// option.WithCPUSelectPolicy(option.CPUSelectPolicyScatter), // default
+		// option.WithCPUSelectMask(option.CPUSelectMaskAll),         // default
+		// option.WithFlowMode(option.FlowModeFromOneOfNIC),          // default
 		).Apply()
 	}
 	// // TODO: check virtio queue
@@ -21,8 +21,8 @@ func (p *Profile) SetupKVM() (err error) {
 	// 	return p.policies[policy.Isolate]().Apply()
 	// }
 	return p.policies[policy.Spread](
-	// option.WithCPUSelectPolicy(option.CPUSelectPolicyFromFirstCore), // default
-	// option.WithCPUSelectMask(option.CPUSelectMaskAll),               // default
-	// option.WithFlowMode(option.FlowModeFromOneOfNIC),                // default
+	// option.WithCPUSelectPolicy(option.CPUSelectPolicyScatter), // default
+	// option.WithCPUSelectMask(option.CPUSelectMaskAll),         // default
+	// option.WithFlowMode(option.FlowModeFromOneOfNIC),          // default
 	).Apply()
 }
