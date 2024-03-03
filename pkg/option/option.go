@@ -18,15 +18,15 @@ type FlowMode int
 
 const (
 	FlowModeFromOneOfNIC  FlowMode = iota // rx from one of all NICs
-	FlowModeSplitMainNIC                  // rx from main NIC and other NICs (k8s ecs/ebm: hostNetwork: eth0, CNI Network: eth1..ethx)
-	FlowModeAvgFromAllNIC                 // rx from all NICs avg
+	FlowModeSplitMainNIC                  // rx from main NIC and/or other NICs (k8s ecs/ebm: hostNetwork: eth0, CNI Network: eth1..ethx)
+	FlowModeAvgFromAllNIC                 // rx from all NICs avg (e.g. bond)
 )
 
 type Option struct {
 	CPUSelectPolicy   CPUSelectPolicy
 	CPUSelectMask     CPUSelectMask
-	FlowMode          FlowMode
-	ExpectConnections int
+	FlowMode          FlowMode // for RFS
+	ExpectConnections int      // for RFS
 }
 
 type OptionFunc func(*Option)
