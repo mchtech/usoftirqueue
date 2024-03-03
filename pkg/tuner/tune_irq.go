@@ -1,9 +1,10 @@
 package tuner
 
 import (
+	"context"
 	"fmt"
 	"sync"
-	"usoftirqueue/pkg/nic"
+	"usoftirqueue/pkg/hardware/nic"
 	"usoftirqueue/pkg/option"
 	"usoftirqueue/pkg/util"
 
@@ -18,7 +19,7 @@ var (
 	rr   *util.RoundRobinIterator[int]
 )
 
-func (t *Tuner) TuneIRQ(eth *nic.NIC, cpus *cpu.Info, dryrun bool, opt *option.Option) (err error) {
+func (t *Tuner) TuneIRQ(eth *nic.NIC, cpus *cpu.Info, opt *option.Option) (err error) {
 
 	var desiredAffinity []int
 
@@ -77,7 +78,7 @@ func (t *Tuner) TuneIRQ(eth *nic.NIC, cpus *cpu.Info, dryrun bool, opt *option.O
 	}
 
 	// tune irq
-	if !dryrun {
+	if !option.DryRun {
 		if err = eth.SetIRQAffinity(desiredAffinity); err != nil {
 			return errors.Wrap(err, "failed to set NIC IRQ affinity")
 		}
@@ -86,5 +87,55 @@ func (t *Tuner) TuneIRQ(eth *nic.NIC, cpus *cpu.Info, dryrun bool, opt *option.O
 		klog.InfoS("dryrun mode: skip tuning NIC IRQ affinity", "nic", eth.Name)
 	}
 
+	return
+}
+
+func (t *Tuner) StopIRQBalance() (err error) {
+
+	klog.InfoS("stop irqbalance")
+	if option.DryRun {
+		klog.Info("dryrun mode: skip to stop irqbalance")
+		return
+	}
+
+	var (
+		svc = "irqbalance.service"
+		bus *util.SystemCtl
+	)
+
+	if bus, err = util.NewWithContext(context.Background()); err != nil {
+		return
+	}
+	defer bus.Close()
+
+	if err = bus.StopService(svc); err != nil {
+		return
+	}
+	klog.InfoS("service stopped", "service", svc)
+	return
+}
+
+func (t *Tuner) StartIRQBalance() (err error) {
+
+	klog.InfoS("start irqbalance")
+	if option.DryRun {
+		klog.Info("dryrun mode: skip to start irqbalance")
+		return
+	}
+
+	var (
+		svc = "irqbalance.service"
+		bus *util.SystemCtl
+	)
+
+	if bus, err = util.NewWithContext(context.Background()); err != nil {
+		return
+	}
+	defer bus.Close()
+
+	if err = bus.StartService(svc); err != nil {
+		return
+	}
+	klog.InfoS("service started", "service", svc)
 	return
 }

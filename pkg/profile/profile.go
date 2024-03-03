@@ -1,10 +1,10 @@
 package profile
 
 import (
-	"usoftirqueue/pkg/nic"
+	hcpu "usoftirqueue/pkg/hardware/cpu"
+	"usoftirqueue/pkg/hardware/nic"
 	"usoftirqueue/pkg/option"
 	"usoftirqueue/pkg/policy"
-	"usoftirqueue/pkg/system"
 
 	"github.com/jaypipes/ghw/pkg/cpu"
 	"k8s.io/klog/v2"
@@ -12,7 +12,6 @@ import (
 
 type Profile struct {
 	// params
-	dryrun    bool
 	largeNode int
 	// vars
 	cpus *cpu.Info
@@ -21,7 +20,7 @@ type Profile struct {
 	policies map[string]func(opts ...option.OptionFunc) policy.Policy
 }
 
-func New(dryrun bool, nicRegex string, largeNode, expectConnections int) (p *Profile, err error) {
+func New(nicRegex string, largeNode, expectConnections int) (p *Profile, err error) {
 
 	var (
 		cpus *cpu.Info
@@ -29,7 +28,7 @@ func New(dryrun bool, nicRegex string, largeNode, expectConnections int) (p *Pro
 	)
 
 	// get CPU count
-	if cpus, err = system.GetCPUInfo(); err != nil {
+	if cpus, err = hcpu.GetCPUInfo(); err != nil {
 		klog.ErrorS(err, "failed to get CPU info")
 		return nil, err
 	}
@@ -44,13 +43,12 @@ func New(dryrun bool, nicRegex string, largeNode, expectConnections int) (p *Pro
 	klog.InfoS("current NICs", "nics", nic.NICList(nics).Names(), "filter", nicRegex)
 
 	p = &Profile{
-		dryrun:    dryrun,
 		largeNode: largeNode,
 		cpus:      cpus,
 		nics:      nics,
 		policies: map[string]func(opts ...option.OptionFunc) policy.Policy{
 			policy.Spread: func(opts ...option.OptionFunc) policy.Policy {
-				return policy.NewSpreadPolicy(dryrun, cpus, nics, opts...)
+				return policy.NewSpreadPolicy(cpus, nics, opts...)
 			},
 			policy.Isolate: func(opts ...option.OptionFunc) policy.Policy {
 				var newOpts []option.OptionFunc
@@ -58,7 +56,7 @@ func New(dryrun bool, nicRegex string, largeNode, expectConnections int) (p *Pro
 					newOpts = append(newOpts, option.WithExpectConnections(expectConnections))
 				}
 				newOpts = append(newOpts, opts...)
-				return policy.NewIsolatePolicy(dryrun, cpus, nics, newOpts...)
+				return policy.NewIsolatePolicy(cpus, nics, newOpts...)
 			},
 		},
 	}

@@ -2,14 +2,15 @@ package tuner
 
 import (
 	"fmt"
-	"usoftirqueue/pkg/nic"
+	"usoftirqueue/pkg/hardware/nic"
+	"usoftirqueue/pkg/option"
 	"usoftirqueue/pkg/util/formatter"
 
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 )
 
-func (t *Tuner) TuneNICRingBufferMax(eth *nic.NIC, dryrun bool) error {
+func (t *Tuner) TuneNICRingBufferMax(eth *nic.NIC) error {
 
 	// get NIC ring
 	ring, err := eth.GetRingBuffer()
@@ -27,7 +28,7 @@ func (t *Tuner) TuneNICRingBufferMax(eth *nic.NIC, dryrun bool) error {
 
 	// tune NIC ring
 	if ring.RxJumboPending < ring.RxJumboMaxPending || ring.TxPending < ring.TxMaxPending || ring.RxPending < ring.RxMaxPending || ring.RxMiniPending < ring.RxMiniMaxPending {
-		if !dryrun {
+		if !option.DryRun {
 			ring.RxJumboPending = ring.RxJumboMaxPending
 			ring.RxMiniPending = ring.RxMiniMaxPending
 			ring.TxPending = ring.TxMaxPending

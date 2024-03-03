@@ -1,4 +1,4 @@
-package system
+package cpu
 
 import (
 	"sort"

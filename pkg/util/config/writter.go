@@ -4,18 +4,17 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"usoftirqueue/pkg/option"
 
 	"k8s.io/klog/v2"
 )
-
-var DryRun bool
 
 func Write(file, value string) error {
 
 	bf, _ := os.ReadFile(file)
 	curr := strings.TrimSpace(string(bf))
 
-	if DryRun {
+	if option.DryRun {
 		klog.InfoS("dryrun mode: skip to write system config", "key", file, "value", fmt.Sprintf("%s -> %s", curr, value))
 		return nil
 	} else {

@@ -4,10 +4,10 @@ import (
 	"flag"
 	"fmt"
 	"time"
-	"usoftirqueue/pkg/config"
+	"usoftirqueue/pkg/hardware/vendor"
+	"usoftirqueue/pkg/option"
 	"usoftirqueue/pkg/policy"
 	"usoftirqueue/pkg/profile"
-	"usoftirqueue/pkg/system"
 
 	"k8s.io/klog/v2"
 )
@@ -20,7 +20,6 @@ var (
 	logFile           = "/var/log/usoftirqueue.log"
 	nicPolicy         = Auto
 	nicRegex          = `^eth[\d]+`
-	dryrun            = false
 	largeNode         = 16
 	expectConnections = 0
 )
@@ -29,7 +28,7 @@ func main() {
 
 	var (
 		err error
-		si  *system.SystemInfo
+		si  *vendor.SystemInfo
 		p   *profile.Profile
 	)
 
@@ -40,7 +39,7 @@ func main() {
 	flag.Set("alsologtostderr", "true")
 
 	flag.StringVar(&nicPolicy, "option.policy", Auto, "spread | isolate")
-	flag.BoolVar(&dryrun, "option.dry-run", false, "dry run")
+	flag.BoolVar(&option.DryRun, "option.dry-run", false, "dry run")
 	flag.StringVar(&nicRegex, "option.nic-filter", nicRegex, "nic regex")
 	flag.IntVar(&largeNode, "option.large-node-threshold", largeNode, "machine is considered as a large node, if cpu core count >")
 	flag.IntVar(&expectConnections, "option.expect-connections", expectConnections, fmt.Sprintf("estimated max connections that the node can process concurrently (default num-cpu:connections=%v)", policy.CoreToConnections))
@@ -49,16 +48,14 @@ func main() {
 
 	klog.InfoS("starting", "at", time.Now().Format(time.RFC3339Nano))
 
-	config.DryRun = dryrun
-
-	if si, err = system.GetSystemInfo(); err != nil {
+	if si, err = vendor.GetSystemInfo(); err != nil {
 		klog.ErrorS(err, "failed to get system info")
 		return
 	}
 	klog.InfoS("system info", "chassis", si.ChassisVendor, "product", si.ProductName, "bios", si.BIOSVendor)
 
 	// setup
-	if p, err = profile.New(dryrun, nicRegex, largeNode, expectConnections); err != nil {
+	if p, err = profile.New(nicRegex, largeNode, expectConnections); err != nil {
 		klog.ErrorS(err, "failed to setup profile")
 		return
 	}

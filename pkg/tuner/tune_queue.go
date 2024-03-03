@@ -2,14 +2,15 @@ package tuner
 
 import (
 	"fmt"
-	"usoftirqueue/pkg/nic"
+	"usoftirqueue/pkg/hardware/nic"
+	"usoftirqueue/pkg/option"
 	"usoftirqueue/pkg/util/formatter"
 
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 )
 
-func (t *Tuner) TuneNICQueueChannelMax(eth *nic.NIC, localCPUCount, totalCPUCount uint32, dryrun bool) error {
+func (t *Tuner) TuneNICQueueChannelMax(eth *nic.NIC, totalCPUCount uint32) error {
 
 	// get NIC queue
 	ech, err := eth.GetQueueChannel()
@@ -22,22 +23,16 @@ func (t *Tuner) TuneNICQueueChannelMax(eth *nic.NIC, localCPUCount, totalCPUCoun
 	desiredCombined := ech.MaxCombined
 	if desiredCombined > totalCPUCount {
 		desiredCombined = totalCPUCount
-	} else if desiredCombined > localCPUCount {
-		desiredCombined = localCPUCount
 	}
 
 	desiredRX := ech.MaxRx
 	if desiredRX > totalCPUCount {
 		desiredRX = totalCPUCount
-	} else if desiredRX > localCPUCount {
-		desiredRX = localCPUCount
 	}
 
 	desiredTX := ech.MaxTx
 	if desiredTX > totalCPUCount {
 		desiredTX = totalCPUCount
-	} else if desiredTX > localCPUCount {
-		desiredTX = localCPUCount
 	}
 
 	klog.InfoS("tune NIC queue channel", "nic", eth.Name,
@@ -48,7 +43,7 @@ func (t *Tuner) TuneNICQueueChannelMax(eth *nic.NIC, localCPUCount, totalCPUCoun
 
 	// tune queue channel
 	if ech.CombinedCount != desiredCombined || ech.RxCount != desiredRX || ech.TxCount != desiredTX {
-		if !dryrun {
+		if !option.DryRun {
 			ech.CombinedCount = desiredCombined
 			ech.RxCount = desiredRX
 			ech.TxCount = desiredTX
@@ -57,6 +52,9 @@ func (t *Tuner) TuneNICQueueChannelMax(eth *nic.NIC, localCPUCount, totalCPUCoun
 				return errors.Wrap(err, "failed to set NIC queue channel")
 			}
 			klog.InfoS("finish tuning NIC queue channel", "nic", eth.Name, "queue", curr)
+			// refresh IRQs
+			old, new := eth.UpdateIRQs()
+			klog.InfoS("finish updating NIC IRQs", "nic", eth.Name, "old", formatter.NewYAML(old), "new", formatter.NewYAML(new))
 		} else {
 			klog.InfoS("dryrun mode: skip tuning NIC queue channel", "nic", eth.Name)
 		}

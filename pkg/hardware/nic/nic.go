@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"usoftirqueue/pkg/irq"
+	"usoftirqueue/pkg/hardware/irq"
 	"usoftirqueue/pkg/util/formatter"
 
 	"github.com/safchain/ethtool"
@@ -139,6 +139,13 @@ func (n *NIC) getIRQs() (irqs irq.IRQList) {
 
 	// n.IRQs = irqs
 	klog.InfoS("get irqs", "nic", n.Name, "irqs", formatter.NewYAML(irqs))
+	return
+}
+
+func (n *NIC) UpdateIRQs() (old, new irq.IRQList) {
+	old = n.IRQs
+	new = n.getIRQs()
+	n.IRQs = new
 	return
 }
 

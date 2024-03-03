@@ -2,11 +2,11 @@ package util
 
 import (
 	"testing"
-	"usoftirqueue/pkg/system"
+	"usoftirqueue/pkg/hardware/cpu"
 )
 
 func TestGetCPUInfo(t *testing.T) {
-	cpu, err := system.GetCPUInfo()
+	cpu, err := cpu.GetCPUInfo()
 	if err != nil {
 		t.Errorf("GetCPUInfo error: %v", err)
 		return

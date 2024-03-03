@@ -1,6 +1,8 @@
-package system
+package cpu
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestGetCPUInfo(t *testing.T) {
 	GetCPUInfo()

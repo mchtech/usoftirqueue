@@ -1,5 +1,7 @@
 package option
 
+var DryRun bool
+
 type CPUSelectPolicy int
 
 const (

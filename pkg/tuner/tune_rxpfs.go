@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"usoftirqueue/pkg/config"
-	"usoftirqueue/pkg/nic"
+	"usoftirqueue/pkg/hardware/nic"
 	"usoftirqueue/pkg/option"
+	"usoftirqueue/pkg/util/config"
 
 	"k8s.io/klog/v2"
 )
@@ -31,7 +31,7 @@ func roundUpToNearestMultipleOf2(n int) int {
 	return (n + 1) & -2
 }
 
-func (t *Tuner) DisableRPSRFSXPS(eths []*nic.NIC, dryrun bool) (err error) {
+func (t *Tuner) DisableRPSRFSXPS(eths []*nic.NIC) (err error) {
 	klog.InfoS("disable RPS RFS aRFS XPS")
 	for _, eth := range eths {
 		if ch, _ := eth.GetQueueChannel(); ch != nil {
@@ -54,7 +54,7 @@ func (t *Tuner) DisableRPSRFSXPS(eths []*nic.NIC, dryrun bool) (err error) {
 	return
 }
 
-func (t *Tuner) EnableRPSRFSXPS(eths []*nic.NIC, cpucount, conncount int, dryrun bool, opt *option.Option) (err error) {
+func (t *Tuner) EnableRPSRFSXPS(eths []*nic.NIC, cpucount, conncount int, opt *option.Option) (err error) {
 
 	// cpu bitmap for RPS
 	cpubm := getCPUBitmap(cpucount)

@@ -1,7 +1,7 @@
 package policy
 
 import (
-	"usoftirqueue/pkg/nic"
+	"usoftirqueue/pkg/hardware/nic"
 	"usoftirqueue/pkg/option"
 	"usoftirqueue/pkg/tuner"
 
@@ -16,8 +16,6 @@ var _ Policy = &CommonPolicy{}
 type CommonPolicy struct {
 	// interface
 	name string
-	// params
-	dryrun bool
 	// vars
 	cpus *cpu.Info
 	nics []*nic.NIC
@@ -27,10 +25,9 @@ type CommonPolicy struct {
 	tuner *tuner.Tuner
 }
 
-func NewCommonPolicy(dryrun bool, cpu *cpu.Info, nics []*nic.NIC, opts ...option.OptionFunc) Policy {
+func NewCommonPolicy(cpu *cpu.Info, nics []*nic.NIC, opts ...option.OptionFunc) Policy {
 	return &CommonPolicy{
 		name:   Common,
-		dryrun: dryrun,
 		cpus:   cpu,
 		nics:   nics,
 		option: option.ParseOptions(opts...),
@@ -40,10 +37,6 @@ func NewCommonPolicy(dryrun bool, cpu *cpu.Info, nics []*nic.NIC, opts ...option
 
 func (p *CommonPolicy) Name() string {
 	return p.name
-}
-
-func (p *CommonPolicy) DryRun() bool {
-	return p.dryrun
 }
 
 func (p *CommonPolicy) CPUs() *cpu.Info {
@@ -60,13 +53,13 @@ func (p *CommonPolicy) Apply() (err error) {
 
 	for _, eth := range p.nics {
 		// tune NIC queue channel to max
-		if err = p.tuner.TuneNICQueueChannelMax(eth, p.cpus.Processors[0].NumThreads, p.cpus.TotalThreads, p.dryrun); err != nil {
+		if err = p.tuner.TuneNICQueueChannelMax(eth, p.cpus.TotalThreads); err != nil {
 			klog.ErrorS(err, "failed to tune NIC queue channel", "nic", eth.Name)
 			break
 		}
 		klog.InfoS("finish tune NIC queue channel", "nic", eth.Name)
 		// tune NIC ring buffer to max
-		if err = p.tuner.TuneNICRingBufferMax(eth, p.dryrun); err != nil {
+		if err = p.tuner.TuneNICRingBufferMax(eth); err != nil {
 			klog.ErrorS(err, "failed to tune NIC ring buffer", "nic", eth.Name)
 			break
 		}

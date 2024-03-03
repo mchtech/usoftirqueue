@@ -5,7 +5,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"usoftirqueue/pkg/config"
+	"usoftirqueue/pkg/util/config"
 )
 
 type IRQ struct {
