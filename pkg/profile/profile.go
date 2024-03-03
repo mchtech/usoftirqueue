@@ -20,7 +20,7 @@ type Profile struct {
 	policies map[string]func(opts ...option.OptionFunc) policy.Policy
 }
 
-func New(dryrun, dryrunQueue bool, nicRegex string, largeNode, expectConnections int) (p *Profile, err error) {
+func New(dryrun bool, nicRegex string, largeNode, expectConnections int) (p *Profile, err error) {
 
 	var (
 		cpus *cpu.Info
@@ -48,7 +48,7 @@ func New(dryrun, dryrunQueue bool, nicRegex string, largeNode, expectConnections
 		nics:      nics,
 		policies: map[string]func(opts ...option.OptionFunc) policy.Policy{
 			policy.Spread: func(opts ...option.OptionFunc) policy.Policy {
-				return policy.NewSpreadPolicy(dryrun, dryrunQueue, cpus, nics, opts...)
+				return policy.NewSpreadPolicy(dryrun, cpus, nics, opts...)
 			},
 			policy.Isolate: func(opts ...option.OptionFunc) policy.Policy {
 				var newOpts []option.OptionFunc
@@ -56,7 +56,7 @@ func New(dryrun, dryrunQueue bool, nicRegex string, largeNode, expectConnections
 					newOpts = append(newOpts, option.WithExpectConnections(expectConnections))
 				}
 				newOpts = append(newOpts, opts...)
-				return policy.NewIsolatePolicy(dryrun, dryrunQueue, cpus, nics, newOpts...)
+				return policy.NewIsolatePolicy(dryrun, cpus, nics, newOpts...)
 			},
 		},
 	}

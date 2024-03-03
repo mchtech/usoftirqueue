@@ -34,9 +34,9 @@ type IsolatePolicy struct {
 	option *option.Option
 }
 
-func NewIsolatePolicy(dryrun, dryrunQueue bool, cpu *cpu.Info, nics []string, opts ...option.OptionFunc) Policy {
+func NewIsolatePolicy(dryrun bool, cpu *cpu.Info, nics []string, opts ...option.OptionFunc) Policy {
 	return &IsolatePolicy{
-		Policy: NewCommonPolicy(dryrun, dryrunQueue, cpu, nics),
+		Policy: NewCommonPolicy(dryrun, cpu, nics),
 		name:   Isolate,
 		option: option.ParseOptions(opts...),
 	}

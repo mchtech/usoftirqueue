@@ -21,7 +21,6 @@ var (
 	nicPolicy         = Auto
 	nicRegex          = `^eth[\d]+`
 	dryrun            = false
-	dryrunQueue       = false
 	largeNode         = 16
 	expectConnections = 0
 )
@@ -42,7 +41,6 @@ func main() {
 
 	flag.StringVar(&nicPolicy, "option.policy", Auto, "spread | isolate")
 	flag.BoolVar(&dryrun, "option.dry-run", false, "dry run")
-	flag.BoolVar(&dryrunQueue, "option.dry-run.queue", false, "dry run in NIC queue step")
 	flag.StringVar(&nicRegex, "option.nic-filter", nicRegex, "nic regex")
 	flag.IntVar(&largeNode, "option.large-node-threshold", largeNode, "machine is considered as a large node, if cpu core count >")
 	flag.IntVar(&expectConnections, "option.expect-connections", expectConnections, fmt.Sprintf("estimated max connections that the node can process concurrently (default num-cpu:connections=%v)", policy.CoreToConnections))
@@ -60,7 +58,7 @@ func main() {
 	klog.InfoS("system info", "chassis", si.ChassisVendor, "product", si.ProductName, "bios", si.BIOSVendor)
 
 	// setup
-	if p, err = profile.New(dryrun, dryrunQueue, nicRegex, largeNode, expectConnections); err != nil {
+	if p, err = profile.New(dryrun, nicRegex, largeNode, expectConnections); err != nil {
 		klog.ErrorS(err, "failed to setup profile")
 		return
 	}

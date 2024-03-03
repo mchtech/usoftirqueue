@@ -10,8 +10,8 @@ import (
 	"strconv"
 	"strings"
 	"usoftirqueue/pkg/config"
-	"usoftirqueue/pkg/formatter"
 	"usoftirqueue/pkg/system"
+	"usoftirqueue/pkg/util/formatter"
 
 	"k8s.io/klog/v2"
 )

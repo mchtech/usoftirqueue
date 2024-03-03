@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
-	"usoftirqueue/pkg/formatter"
+	"usoftirqueue/pkg/util/formatter"
 
 	"github.com/jaypipes/ghw"
 	"github.com/jaypipes/ghw/pkg/cpu"
