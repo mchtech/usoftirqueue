@@ -1,6 +1,6 @@
 package util
 
-type AccumulateOffsetIterator[T any] struct {
+type ScatterRoundRobinIterator[T any] struct {
 	data     []T
 	length   int
 	offset   int
@@ -9,8 +9,8 @@ type AccumulateOffsetIterator[T any] struct {
 	fn       func(num int) (r []T)
 }
 
-func NewAccumulateOffsetIterator[T any](data []T) (b *AccumulateOffsetIterator[T]) {
-	return &AccumulateOffsetIterator[T]{
+func NewScatterRoundRobinIterator[T any](data []T) (b *ScatterRoundRobinIterator[T]) {
+	return &ScatterRoundRobinIterator[T]{
 		data:     data,
 		length:   len(data),
 		offset:   -1,
@@ -30,7 +30,7 @@ func NewAccumulateOffsetIterator[T any](data []T) (b *AccumulateOffsetIterator[T
 	}
 }
 
-func (b *AccumulateOffsetIterator[T]) NewInterval(interval int) *AccumulateOffsetIterator[T] {
+func (b *ScatterRoundRobinIterator[T]) NewInterval(interval int) *ScatterRoundRobinIterator[T] {
 	b.interval = interval
 	if b.interval <= 0 {
 		b.interval = 1
@@ -43,7 +43,7 @@ func (b *AccumulateOffsetIterator[T]) NewInterval(interval int) *AccumulateOffse
 	return b
 }
 
-func (b *AccumulateOffsetIterator[T]) NextN(num int) (r []T) {
+func (b *ScatterRoundRobinIterator[T]) NextN(num int) (r []T) {
 	if b.offset == -1 {
 		b.offset = 0
 	}

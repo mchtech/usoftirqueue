@@ -12,9 +12,9 @@ import (
 )
 
 var (
-	once      sync.Once
-	biterator *util.AccumulateOffsetIterator[int]
-	citerator *util.CircularIterator[int]
+	once sync.Once
+	srr  *util.ScatterRoundRobinIterator[int]
+	rr   *util.RoundRobinIterator[int]
 )
 
 func TuneNICIRQ(eth string, cpus *cpu.Info, dryrun bool, opt *option.Option) (err error) {
@@ -23,6 +23,7 @@ func TuneNICIRQ(eth string, cpus *cpu.Info, dryrun bool, opt *option.Option) (er
 
 	irqs := getNICIRQ(eth)
 	numIRQ := len(irqs)
+	numCore := int(cpus.TotalThreads)
 
 	var numa int
 	switch opt.CPUSelectMask {
@@ -33,40 +34,33 @@ func TuneNICIRQ(eth string, cpus *cpu.Info, dryrun bool, opt *option.Option) (er
 	default:
 		return fmt.Errorf("unknown CPUSelectMask: %d", opt.CPUSelectMask)
 	}
+	if numa >= 0 {
+		numCore = int(cpus.Processors[0].NumThreads)
+	}
 
 	cores := util.GetCoreList(cpus, numa, false)
 	once.Do(func() {
-		citerator = util.NewCircularIterator(cores)
-		biterator = util.NewAccumulateOffsetIterator(cores)
+		rr = util.NewRoundRobinIterator(cores)
+		srr = util.NewScatterRoundRobinIterator(cores)
 	})
 
-	if opt.CPUSelectPolicy == option.CPUSelectPolicyFromPreviousCore {
-		desiredAffinity = citerator.NextN(numIRQ)
-	} else {
-		// update num core
-		numCore := int(cpus.TotalThreads)
-		if numa >= 0 {
-			numCore = int(cpus.Processors[0].NumThreads)
+	switch opt.CPUSelectPolicy {
+	case option.CPUSelectPolicyFromPreviousCore:
+		desiredAffinity = rr.NextN(numIRQ)
+	case option.CPUSelectPolicyFromFirstCore:
+		for i := 0; i < numIRQ/numCore; i++ {
+			desiredAffinity = append(desiredAffinity, cores...)
 		}
-		// try balance IRQs across cores
-		if numIRQ == numCore {
-			desiredAffinity = cores
-		} else if numIRQ < numCore {
-			if numCore%numIRQ == 0 {
-				desiredAffinity = append(desiredAffinity, biterator.NewInterval(numCore/numIRQ).NextN(numIRQ)...)
+		// try to scatter IRQs across cores
+		if remain := numIRQ % numCore; remain != 0 {
+			if numCore%remain == 0 {
+				desiredAffinity = append(desiredAffinity, srr.NewInterval(numCore/remain).NextN(remain)...)
 			} else {
-				desiredAffinity = append(desiredAffinity, biterator.NewInterval(1).NextN(numIRQ)...)
-			}
-		} else { // numIRQ > numCore
-			for i := 0; i < numIRQ/numCore; i++ {
-				desiredAffinity = append(desiredAffinity, cores...)
-			}
-			if remain := numIRQ % numCore; numCore%remain == 0 {
-				desiredAffinity = append(desiredAffinity, biterator.NewInterval(numCore/remain).NextN(remain)...)
-			} else {
-				desiredAffinity = append(desiredAffinity, biterator.NewInterval(1).NextN(remain)...)
+				desiredAffinity = append(desiredAffinity, srr.NewInterval(1).NextN(remain)...)
 			}
 		}
+	default:
+		return errors.Errorf("unsupported CPU select policy %q", opt.CPUSelectPolicy)
 	}
 
 	for i := 0; i < numIRQ; i++ {

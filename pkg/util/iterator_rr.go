@@ -1,12 +1,12 @@
 package util
 
-type CircularIterator[T any] struct {
+type RoundRobinIterator[T any] struct {
 	fn func() T
 }
 
-func NewCircularIterator[T any](data []T) *CircularIterator[T] {
+func NewRoundRobinIterator[T any](data []T) *RoundRobinIterator[T] {
 	var i int
-	return &CircularIterator[T]{
+	return &RoundRobinIterator[T]{
 		fn: func() T {
 			v := data[i]
 			i++
@@ -18,7 +18,7 @@ func NewCircularIterator[T any](data []T) *CircularIterator[T] {
 	}
 }
 
-func (x *CircularIterator[T]) NextN(num int) (n []T) {
+func (x *RoundRobinIterator[T]) NextN(num int) (n []T) {
 	for i := 0; i < num; i++ {
 		n = append(n, x.fn())
 	}
