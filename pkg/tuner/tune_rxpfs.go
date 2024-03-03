@@ -1,4 +1,4 @@
-package nic
+package tuner
 
 import (
 	"errors"
@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 	"usoftirqueue/pkg/config"
+	"usoftirqueue/pkg/nic"
 	"usoftirqueue/pkg/option"
 
 	"k8s.io/klog/v2"
@@ -30,9 +31,9 @@ func roundUpToNearestMultipleOf2(n int) int {
 	return (n + 1) & -2
 }
 
-func DisableRPSRFSXPS(nics []*NIC, dryrun bool) (err error) {
+func (t *Tuner) DisableRPSRFSXPS(eths []*nic.NIC, dryrun bool) (err error) {
 	klog.InfoS("disable RPS RFS aRFS XPS")
-	for _, eth := range nics {
+	for _, eth := range eths {
 		if ch, _ := eth.GetQueueChannel(); ch != nil {
 			for i := 0; i < int(ch.CombinedCount); i++ {
 				err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/rx-%d/rps_cpus", eth.Name, i), "0"))
@@ -53,7 +54,7 @@ func DisableRPSRFSXPS(nics []*NIC, dryrun bool) (err error) {
 	return
 }
 
-func EnableRPSRFSXPS(nics []*NIC, cpucount, conncount int, dryrun bool, opt *option.Option) (err error) {
+func (t *Tuner) EnableRPSRFSXPS(eths []*nic.NIC, cpucount, conncount int, dryrun bool, opt *option.Option) (err error) {
 
 	// cpu bitmap for RPS
 	cpubm := getCPUBitmap(cpucount)
@@ -66,23 +67,23 @@ func EnableRPSRFSXPS(nics []*NIC, cpucount, conncount int, dryrun bool, opt *opt
 	}
 
 	// group nics according to flow mode
-	var nicGroups [][]*NIC
+	var nicGroups [][]*nic.NIC
 	switch opt.FlowMode {
 	case option.FlowModeAvgFromAllNIC:
-		nicGroups = [][]*NIC{nics}
+		nicGroups = [][]*nic.NIC{eths}
 	case option.FlowModeFromOneOfNIC:
-		for _, nic := range nics {
-			nicGroups = append(nicGroups, []*NIC{nic})
+		for _, eth := range eths {
+			nicGroups = append(nicGroups, []*nic.NIC{eth})
 		}
 	case option.FlowModeSplitMainNIC:
-		for i, nic := range nics {
+		for i, eth := range eths {
 			if i == 0 {
-				nicGroups = append(nicGroups, []*NIC{nic})
+				nicGroups = append(nicGroups, []*nic.NIC{eth})
 			} else {
 				if len(nicGroups) == 1 {
-					nicGroups = append(nicGroups, []*NIC{})
+					nicGroups = append(nicGroups, []*nic.NIC{})
 				}
-				nicGroups[1] = append(nicGroups[1], nic)
+				nicGroups[1] = append(nicGroups[1], eth)
 			}
 		}
 	default:

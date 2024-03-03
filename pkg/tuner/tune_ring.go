@@ -1,22 +1,24 @@
-package nic
+package tuner
 
 import (
 	"fmt"
+	"usoftirqueue/pkg/nic"
+	"usoftirqueue/pkg/util/formatter"
 
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 )
 
-func TuneNICRingBufferMax(eth *NIC, dryrun bool) error {
+func (t *Tuner) TuneNICRingBufferMax(eth *nic.NIC, dryrun bool) error {
 
 	// get NIC ring
 	ring, err := eth.GetRingBuffer()
 	if err != nil {
 		return errors.Wrap(err, "failed to get NIC ring")
 	}
-	klog.InfoS("get NIC ring buffer", "nic", eth, "ring", ring)
+	klog.InfoS("get NIC ring buffer", "nic", eth.Name, "ring", formatter.NewYAML(ring))
 
-	klog.InfoS("tune NIC ring buffer", "nic", eth,
+	klog.InfoS("tune NIC ring buffer", "nic", eth.Name,
 		"RxJumbo", fmt.Sprintf("%d -> %d", ring.RxJumboPending, ring.RxJumboMaxPending),
 		"RxMini", fmt.Sprintf("%d -> %d", ring.RxMiniPending, ring.RxMiniPending),
 		"Tx", fmt.Sprintf("%d -> %d", ring.TxPending, ring.TxPending),
@@ -35,12 +37,12 @@ func TuneNICRingBufferMax(eth *NIC, dryrun bool) error {
 			if err != nil {
 				return errors.Wrap(err, "failed to set NIC ring buffer")
 			}
-			klog.InfoS("finish setting NIC ring buffer", "nic", eth, "ring", curr)
+			klog.InfoS("finish setting NIC ring buffer", "nic", eth.Name, "ring", curr)
 		} else {
-			klog.InfoS("dryrun mode: skip setting NIC ring buffer", "nic", eth)
+			klog.InfoS("dryrun mode: skip setting NIC ring buffer", "nic", eth.Name)
 		}
 	} else {
-		klog.InfoS("no need to tune NIC ring buffer", "nic", eth, "ring", ring)
+		klog.InfoS("no need to tune NIC ring buffer", "nic", eth.Name, "ring", ring)
 	}
 
 	return nil

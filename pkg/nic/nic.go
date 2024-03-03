@@ -14,13 +14,14 @@ import (
 	"k8s.io/klog/v2"
 )
 
-var IRQFilters = map[string]*regexp.Regexp{
+var nicQueueIRQFilter = map[string]*regexp.Regexp{
+	"i40e":       regexp.MustCompile(`i40e-eth[0-9]+-TxRx-[0-9]+`),
 	"mlx5_core":  regexp.MustCompile(`mlx5_comp[0-9]+@pci:.+`),
 	"virtio_net": regexp.MustCompile(`virtio[0-9]+-(in|out)put[.][0-9]+`),
 }
 
-func UpdateIRQFilter(driver, regex string) {
-	IRQFilters[driver] = regexp.MustCompile(regex)
+func UpdateNICQueueIRQFilter(driver, regex string) {
+	nicQueueIRQFilter[driver] = regexp.MustCompile(regex)
 }
 
 type NIC struct {
@@ -28,6 +29,24 @@ type NIC struct {
 	Driver string      // e.g. mlx5_core
 	Device string      //
 	IRQs   irq.IRQList //
+}
+
+type NICList []*NIC
+
+func (nics NICList) Names() []string {
+	names := make([]string, len(nics))
+	for i, n := range nics {
+		names[i] = n.Name
+	}
+	return names
+}
+
+func NewNIC(name string) *NIC {
+	n := &NIC{Name: name}
+	n.Device = n.getDevice()
+	n.Driver = n.getDriver()
+	n.IRQs = n.getIRQs()
+	return n
 }
 
 func List(regexpr string) (nics []*NIC, err error) {
@@ -50,6 +69,7 @@ func List(regexpr string) (nics []*NIC, err error) {
 	for _, iface := range ifaces {
 		dev, _ := filepath.EvalSymlinks(fmt.Sprintf("/sys/class/net/%s", iface.Name))
 		if strings.Contains(dev, "/virtual/net/") {
+			klog.InfoS("ignore virtual NIC", "nic", iface.Name)
 			continue
 		}
 		phyNICs = append(phyNICs, iface)
@@ -59,14 +79,7 @@ func List(regexpr string) (nics []*NIC, err error) {
 	// filter NICs by regexpr
 	for _, iface := range phyNICs {
 		if reg.MatchString(iface.Name) {
-			var n *NIC
-			n = &NIC{
-				Name:   iface.Name,
-				Device: n.getDevice(),
-				Driver: n.getDriver(),
-				IRQs:   n.getIRQS(),
-			}
-			nics = append(nics, n)
+			nics = append(nics, NewNIC(iface.Name))
 		}
 	}
 	return
@@ -74,15 +87,15 @@ func List(regexpr string) (nics []*NIC, err error) {
 
 func (n *NIC) getDevice() string {
 	devPath := fmt.Sprintf("/sys/class/net/%s/device", n.Name)
-	s, _ := filepath.EvalSymlinks(devPath)
+	dev, _ := filepath.EvalSymlinks(devPath)
 	// s = "/sys/devices/pci0000:16/0000:16:02.0/0000:17:00.0/0000:18:11.0/0000:2a:00.0/virtio4"
-	if strings.Contains(s, "virtio") {
-		s = filepath.Dir(s)
+	if strings.Contains(dev, "virtio") {
+		dev = filepath.Dir(dev)
 	}
 
-	n.Device = s
-	// klog.InfoS("get dev", "nic", nic, "dev", dev)
-	return s
+	// n.Device = s
+	klog.InfoS("get dev", "nic", n.Name, "device", dev)
+	return dev
 }
 
 func (n *NIC) getDriver() string {
@@ -90,15 +103,15 @@ func (n *NIC) getDriver() string {
 	s, _ := filepath.EvalSymlinks(drvPath)
 	drv := filepath.Base(s)
 
-	n.Driver = drv
-	// klog.InfoS("get drv", "nic", nic, "dev", dev, "driver", drv)
+	// n.Driver = drv
+	klog.InfoS("get driver", "nic", n.Name, "driver", drv)
 	return drv
 }
 
-func (n *NIC) getIRQS() (irqs irq.IRQList) {
+func (n *NIC) getIRQs() (irqs irq.IRQList) {
 
 	// get irq filter
-	filter := IRQFilters[n.Driver]
+	filter := nicQueueIRQFilter[n.Driver]
 
 	// get irqs in dir dev
 	var irqNums []string
@@ -106,12 +119,12 @@ func (n *NIC) getIRQS() (irqs irq.IRQList) {
 	for _, p := range irqNumsPath {
 		irqNums = append(irqNums, filepath.Base(p))
 	}
-	// klog.InfoS("get irqs", "nic", nic, "irqs", irqNums)
+	klog.InfoS("get irqs", "nic", n.Name, "irqs", irqNums)
 
 	// get irq info
 	for _, irqNum := range irqNums {
 		irq := irq.New(irqNum)
-		// klog.InfoS("get irq", "nic", nic, "irq", irq)
+		klog.InfoS("get irq", "nic", n.Name, "irq", irq)
 		if filter != nil {
 			for _, name := range irq.Names {
 				if filter.MatchString(name) {
@@ -124,12 +137,12 @@ func (n *NIC) getIRQS() (irqs irq.IRQList) {
 		}
 	}
 
-	n.IRQs = irqs
-	// klog.InfoS("get irqs", "nic", nic, "irqs", formatter.NewYAML(irqs))
+	// n.IRQs = irqs
+	klog.InfoS("get irqs", "nic", n.Name, "irqs", formatter.NewYAML(irqs))
 	return
 }
 
-func (n *NIC) setIRQAffinity(cpus []int) (err error) {
+func (n *NIC) SetIRQAffinity(cpus []int) (err error) {
 	for i, irq := range n.IRQs {
 		if !irq.Activated {
 			continue
@@ -224,7 +237,7 @@ func (n *NIC) GetFeatures() (features map[string]bool, err error) {
 	}
 	defer et.Close()
 
-	return et.Features(n.Name)
+	return et.Features(n.Name) // pkg bugs: features are not full
 }
 
 func (n *NIC) SetFeature(key string, value bool) (err error) {

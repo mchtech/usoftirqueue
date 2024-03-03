@@ -5,6 +5,7 @@ import (
 	"usoftirqueue/pkg/irq"
 	"usoftirqueue/pkg/nic"
 	"usoftirqueue/pkg/option"
+	"usoftirqueue/pkg/tuner"
 
 	"github.com/jaypipes/ghw/pkg/cpu"
 	"k8s.io/klog/v2"
@@ -33,6 +34,7 @@ type IsolatePolicy struct {
 	Policy
 	name   string
 	option *option.Option
+	plan   *tuner.Tuner
 }
 
 func NewIsolatePolicy(dryrun bool, cpu *cpu.Info, nics []*nic.NIC, opts ...option.OptionFunc) Policy {
@@ -40,6 +42,7 @@ func NewIsolatePolicy(dryrun bool, cpu *cpu.Info, nics []*nic.NIC, opts ...optio
 		Policy: NewCommonPolicy(dryrun, cpu, nics),
 		name:   Isolate,
 		option: option.ParseOptions(opts...),
+		plan:   &tuner.Tuner{},
 	}
 }
 
@@ -82,22 +85,22 @@ func (p *IsolatePolicy) apply() (err error) {
 
 	// tune IRQs
 	for _, eth := range p.NICs() {
-		if err = eth.TuneIRQ(p.CPUs(), p.DryRun(), p.option); err != nil {
-			klog.ErrorS(err, "failed to tune IRQs", "nic", eth)
+		if err = p.plan.TuneIRQ(eth, p.CPUs(), p.DryRun(), p.option); err != nil {
+			klog.ErrorS(err, "failed to tune IRQs", "nic", eth.Name)
 			return
 		}
 	}
 
-	// // enable RPS RFS aRFS XPS
-	// if err = nic.EnableRPSRFSXPS(
-	// 	p.NICs(),
-	// 	int(p.CPUs().TotalThreads),
-	// 	p.ExpectConnections(),
-	// 	p.DryRun(),
-	// 	p.option,
-	// ); err != nil {
-	// 	klog.ErrorS(err, "failed to disable RPS RFS aRFS XPS", "nic", p.NICs())
-	// 	return
-	// }
+	// enable RPS RFS aRFS XPS
+	if err = p.plan.EnableRPSRFSXPS(
+		p.NICs(),
+		int(p.CPUs().TotalThreads),
+		p.ExpectConnections(),
+		p.DryRun(),
+		p.option,
+	); err != nil {
+		klog.ErrorS(err, "failed to disable RPS RFS aRFS XPS", "nic", p.NICs())
+		return
+	}
 	return
 }

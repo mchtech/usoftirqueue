@@ -1,8 +1,9 @@
-package nic
+package tuner
 
 import (
 	"fmt"
 	"sync"
+	"usoftirqueue/pkg/nic"
 	"usoftirqueue/pkg/option"
 	"usoftirqueue/pkg/util"
 
@@ -17,12 +18,12 @@ var (
 	rr   *util.RoundRobinIterator[int]
 )
 
-func (n *NIC) TuneIRQ(cpus *cpu.Info, dryrun bool, opt *option.Option) (err error) {
+func (t *Tuner) TuneIRQ(eth *nic.NIC, cpus *cpu.Info, dryrun bool, opt *option.Option) (err error) {
 
 	var desiredAffinity []int
 
 	// TODO: filter enabled
-	irqs := n.IRQs
+	irqs := eth.IRQs
 	numIRQ := len(irqs)
 	numCore := int(cpus.TotalThreads)
 
@@ -66,23 +67,23 @@ func (n *NIC) TuneIRQ(cpus *cpu.Info, dryrun bool, opt *option.Option) (err erro
 
 	for i := 0; i < numIRQ; i++ {
 		klog.InfoS("tune NIC IRQ affinity",
-			"nic", n.Name,
+			"nic", eth.Name,
 			"irq", irqs[i].IRQ,
 			"name", irqs[i].Name,
-			"driver", n.Driver,
-			// "bus", n.Device,
+			"driver", eth.Driver,
+			// "bus", eth.Device,
 			"affinity", fmt.Sprintf("%v -> %v", irqs[i].Affinity, []int{desiredAffinity[i]}),
 		)
 	}
 
 	// tune irq
 	if !dryrun {
-		if err = n.setIRQAffinity(desiredAffinity); err != nil {
+		if err = eth.SetIRQAffinity(desiredAffinity); err != nil {
 			return errors.Wrap(err, "failed to set NIC IRQ affinity")
 		}
-		klog.InfoS("finish tuning NIC IRQ affinity", "nic", n.Name, "irq", irqs.GetActivatedIRQs(), "affinity", desiredAffinity)
+		klog.InfoS("finish tuning NIC IRQ affinity", "nic", eth.Name, "irq", irqs.GetActivatedIRQs(), "affinity", desiredAffinity)
 	} else {
-		klog.InfoS("dryrun mode: skip tuning NIC IRQ affinity", "nic", n.Name)
+		klog.InfoS("dryrun mode: skip tuning NIC IRQ affinity", "nic", eth.Name)
 	}
 
 	return

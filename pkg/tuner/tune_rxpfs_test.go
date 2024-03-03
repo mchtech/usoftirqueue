@@ -1,4 +1,4 @@
-package nic
+package tuner
 
 import "testing"
 

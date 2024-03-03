@@ -3,6 +3,7 @@ package policy
 import (
 	"usoftirqueue/pkg/nic"
 	"usoftirqueue/pkg/option"
+	"usoftirqueue/pkg/tuner"
 
 	"github.com/jaypipes/ghw/pkg/cpu"
 	"k8s.io/klog/v2"
@@ -22,6 +23,8 @@ type CommonPolicy struct {
 	nics []*nic.NIC
 	// option
 	option *option.Option
+	// exec
+	plan *tuner.Tuner
 }
 
 func NewCommonPolicy(dryrun bool, cpu *cpu.Info, nics []*nic.NIC, opts ...option.OptionFunc) Policy {
@@ -31,6 +34,7 @@ func NewCommonPolicy(dryrun bool, cpu *cpu.Info, nics []*nic.NIC, opts ...option
 		cpus:   cpu,
 		nics:   nics,
 		option: option.ParseOptions(opts...),
+		plan:   &tuner.Tuner{},
 	}
 }
 
@@ -57,18 +61,18 @@ func (p *CommonPolicy) Apply() (err error) {
 	for _, eth := range p.nics {
 
 		// tune NIC queue channel to max
-		if err = nic.TuneNICQueueChannelMax(eth, p.cpus.Processors[0].NumThreads, p.cpus.TotalThreads, p.dryrun); err != nil {
-			klog.ErrorS(err, "failed to tune NIC queue channel", "nic", eth)
+		if err = p.plan.TuneNICQueueChannelMax(eth, p.cpus.Processors[0].NumThreads, p.cpus.TotalThreads, p.dryrun); err != nil {
+			klog.ErrorS(err, "failed to tune NIC queue channel", "nic", eth.Name)
 			break
 		}
-		klog.InfoS("finish tune NIC queue channel", "nic", eth)
+		klog.InfoS("finish tune NIC queue channel", "nic", eth.Name)
 
 		// tune NIC ring buffer to max
-		if err = nic.TuneNICRingBufferMax(eth, p.dryrun); err != nil {
-			klog.ErrorS(err, "failed to tune NIC ring buffer", "nic", eth)
+		if err = p.plan.TuneNICRingBufferMax(eth, p.dryrun); err != nil {
+			klog.ErrorS(err, "failed to tune NIC ring buffer", "nic", eth.Name)
 			break
 		}
-		klog.InfoS("finish tune NIC ring buffer", "nic", eth)
+		klog.InfoS("finish tune NIC ring buffer", "nic", eth.Name)
 	}
 	return
 }

@@ -41,7 +41,7 @@ func New(dryrun bool, nicRegex string, largeNode, expectConnections int) (p *Pro
 		klog.ErrorS(err, "failed to get NICs", "regexp", nicRegex)
 		return nil, err
 	}
-	klog.InfoS("current NICs", "nics", nics, "filter", nicRegex)
+	klog.InfoS("current NICs", "nics", nic.NICList(nics).Names(), "filter", nicRegex)
 
 	p = &Profile{
 		dryrun:    dryrun,
