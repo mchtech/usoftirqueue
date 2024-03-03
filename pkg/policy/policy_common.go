@@ -24,7 +24,7 @@ type CommonPolicy struct {
 	// option
 	option *option.Option
 	// exec
-	plan *tuner.Tuner
+	tuner *tuner.Tuner
 }
 
 func NewCommonPolicy(dryrun bool, cpu *cpu.Info, nics []*nic.NIC, opts ...option.OptionFunc) Policy {
@@ -34,7 +34,7 @@ func NewCommonPolicy(dryrun bool, cpu *cpu.Info, nics []*nic.NIC, opts ...option
 		cpus:   cpu,
 		nics:   nics,
 		option: option.ParseOptions(opts...),
-		plan:   &tuner.Tuner{},
+		tuner:  tuner.New(),
 	}
 }
 
@@ -59,16 +59,14 @@ func (p *CommonPolicy) Apply() (err error) {
 	klog.InfoS("apply policy", "name", p.Name())
 
 	for _, eth := range p.nics {
-
 		// tune NIC queue channel to max
-		if err = p.plan.TuneNICQueueChannelMax(eth, p.cpus.Processors[0].NumThreads, p.cpus.TotalThreads, p.dryrun); err != nil {
+		if err = p.tuner.TuneNICQueueChannelMax(eth, p.cpus.Processors[0].NumThreads, p.cpus.TotalThreads, p.dryrun); err != nil {
 			klog.ErrorS(err, "failed to tune NIC queue channel", "nic", eth.Name)
 			break
 		}
 		klog.InfoS("finish tune NIC queue channel", "nic", eth.Name)
-
 		// tune NIC ring buffer to max
-		if err = p.plan.TuneNICRingBufferMax(eth, p.dryrun); err != nil {
+		if err = p.tuner.TuneNICRingBufferMax(eth, p.dryrun); err != nil {
 			klog.ErrorS(err, "failed to tune NIC ring buffer", "nic", eth.Name)
 			break
 		}

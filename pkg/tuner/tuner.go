@@ -1,3 +1,8 @@
 package tuner
 
-type Tuner struct{}
+type Tuner struct {
+}
+
+func New() *Tuner {
+	return &Tuner{}
+}

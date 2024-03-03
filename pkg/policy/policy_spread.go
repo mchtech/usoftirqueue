@@ -18,7 +18,7 @@ type SpreadPolicy struct {
 	Policy
 	name   string
 	option *option.Option
-	plan   *tuner.Tuner
+	tuner  *tuner.Tuner
 }
 
 func NewSpreadPolicy(dryrun bool, cpu *cpu.Info, nics []*nic.NIC, opts ...option.OptionFunc) Policy {
@@ -26,7 +26,7 @@ func NewSpreadPolicy(dryrun bool, cpu *cpu.Info, nics []*nic.NIC, opts ...option
 		Policy: NewCommonPolicy(dryrun, cpu, nics),
 		name:   Spread,
 		option: option.ParseOptions(opts...),
-		plan:   &tuner.Tuner{},
+		tuner:  tuner.New(),
 	}
 }
 
@@ -57,14 +57,14 @@ func (p *SpreadPolicy) apply() (err error) {
 
 	// tune IRQs
 	for _, eth := range p.NICs() {
-		if err = p.plan.TuneIRQ(eth, p.CPUs(), p.DryRun(), p.option); err != nil {
+		if err = p.tuner.TuneIRQ(eth, p.CPUs(), p.DryRun(), p.option); err != nil {
 			klog.ErrorS(err, "failed to tune IRQs", "nic", eth)
 			return
 		}
 	}
 
 	// disable RPS RFS aRFS XPS
-	if err = p.plan.DisableRPSRFSXPS(p.NICs(), p.DryRun()); err != nil {
+	if err = p.tuner.DisableRPSRFSXPS(p.NICs(), p.DryRun()); err != nil {
 		klog.ErrorS(err, "failed to disable RPS RFS aRFS XPS", "nic", p.NICs())
 		return
 	}

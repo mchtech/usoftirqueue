@@ -34,7 +34,7 @@ type IsolatePolicy struct {
 	Policy
 	name   string
 	option *option.Option
-	plan   *tuner.Tuner
+	tuner  *tuner.Tuner
 }
 
 func NewIsolatePolicy(dryrun bool, cpu *cpu.Info, nics []*nic.NIC, opts ...option.OptionFunc) Policy {
@@ -42,7 +42,7 @@ func NewIsolatePolicy(dryrun bool, cpu *cpu.Info, nics []*nic.NIC, opts ...optio
 		Policy: NewCommonPolicy(dryrun, cpu, nics),
 		name:   Isolate,
 		option: option.ParseOptions(opts...),
-		plan:   &tuner.Tuner{},
+		tuner:  tuner.New(),
 	}
 }
 
@@ -85,14 +85,14 @@ func (p *IsolatePolicy) apply() (err error) {
 
 	// tune IRQs
 	for _, eth := range p.NICs() {
-		if err = p.plan.TuneIRQ(eth, p.CPUs(), p.DryRun(), p.option); err != nil {
+		if err = p.tuner.TuneIRQ(eth, p.CPUs(), p.DryRun(), p.option); err != nil {
 			klog.ErrorS(err, "failed to tune IRQs", "nic", eth.Name)
 			return
 		}
 	}
 
 	// enable RPS RFS aRFS XPS
-	if err = p.plan.EnableRPSRFSXPS(
+	if err = p.tuner.EnableRPSRFSXPS(
 		p.NICs(),
 		int(p.CPUs().TotalThreads),
 		p.ExpectConnections(),
