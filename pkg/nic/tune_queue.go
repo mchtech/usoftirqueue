@@ -7,14 +7,14 @@ import (
 	"k8s.io/klog/v2"
 )
 
-func TuneNICQueueChannelMax(localCPUCount, totalCPUCount uint32, eth string, dryrun bool) error {
+func TuneNICQueueChannelMax(eth *NIC, localCPUCount, totalCPUCount uint32, dryrun bool) error {
 
 	// get NIC queue
-	ech, err := GetNICQueueChannel(eth)
+	ech, err := eth.GetQueueChannel()
 	if err != nil {
 		return errors.Wrap(err, "failed to get NIC queue channel")
 	}
-	klog.InfoS("current NIC queue channel", "nic", eth, "queue", ech)
+	klog.InfoS("current NIC queue channel", "nic", eth.Name, "queue", ech)
 
 	// calculate desired queue channel
 	desiredCombined := ech.MaxCombined
@@ -38,7 +38,7 @@ func TuneNICQueueChannelMax(localCPUCount, totalCPUCount uint32, eth string, dry
 		desiredTX = localCPUCount
 	}
 
-	klog.InfoS("tune NIC queue channel", "nic", eth,
+	klog.InfoS("tune NIC queue channel", "nic", eth.Name,
 		"Combined", fmt.Sprintf("%d -> %d", ech.CombinedCount, desiredCombined),
 		"Rx", fmt.Sprintf("%d -> %d", ech.RxCount, desiredRX),
 		"Tx", fmt.Sprintf("%d -> %d", ech.TxCount, desiredTX),
@@ -50,16 +50,16 @@ func TuneNICQueueChannelMax(localCPUCount, totalCPUCount uint32, eth string, dry
 			ech.CombinedCount = desiredCombined
 			ech.RxCount = desiredRX
 			ech.TxCount = desiredTX
-			curr, err := SetNICQueueChannel(eth, *ech)
+			curr, err := eth.SetQueueChannel(*ech)
 			if err != nil {
 				return errors.Wrap(err, "failed to set NIC queue channel")
 			}
-			klog.InfoS("finish tuning NIC queue channel", "nic", eth, "queue", curr)
+			klog.InfoS("finish tuning NIC queue channel", "nic", eth.Name, "queue", curr)
 		} else {
-			klog.InfoS("dryrun mode: skip tuning NIC queue channel", "nic", eth)
+			klog.InfoS("dryrun mode: skip tuning NIC queue channel", "nic", eth.Name)
 		}
 	} else {
-		klog.InfoS("no need to tune NIC queue channel", "nic", eth)
+		klog.InfoS("no need to tune NIC queue channel", "nic", eth.Name)
 	}
 
 	return nil

@@ -1,6 +1,7 @@
 package policy
 
 import (
+	"usoftirqueue/pkg/irq"
 	"usoftirqueue/pkg/nic"
 	"usoftirqueue/pkg/option"
 
@@ -18,7 +19,7 @@ type SpreadPolicy struct {
 	option *option.Option
 }
 
-func NewSpreadPolicy(dryrun bool, cpu *cpu.Info, nics []string, opts ...option.OptionFunc) Policy {
+func NewSpreadPolicy(dryrun bool, cpu *cpu.Info, nics []*nic.NIC, opts ...option.OptionFunc) Policy {
 	return &SpreadPolicy{
 		Policy: NewCommonPolicy(dryrun, cpu, nics),
 		name:   Spread,
@@ -46,23 +47,23 @@ func (p *SpreadPolicy) Apply() (err error) {
 func (p *SpreadPolicy) apply() (err error) {
 
 	// stop irqbalance
-	if err = nic.StopIRQBalance(p.DryRun()); err != nil {
+	if err = irq.StopIRQBalance(p.DryRun()); err != nil {
 		klog.ErrorS(err, "failed to stop irqbalance")
 		return
 	}
 
 	// tune IRQs
 	for _, eth := range p.NICs() {
-		if err = nic.TuneNICIRQ(eth, p.CPUs(), p.DryRun(), p.option); err != nil {
+		if err = eth.TuneIRQ(p.CPUs(), p.DryRun(), p.option); err != nil {
 			klog.ErrorS(err, "failed to tune IRQs", "nic", eth)
 			return
 		}
 	}
 
-	// disable RPS RFS aRFS XPS
-	if err = nic.DisableRPSRFSXPS(p.NICs(), p.DryRun()); err != nil {
-		klog.ErrorS(err, "failed to disable RPS RFS aRFS XPS", "nic", p.NICs())
-		return
-	}
+	// // disable RPS RFS aRFS XPS
+	// if err = nic.DisableRPSRFSXPS(p.NICs(), p.DryRun()); err != nil {
+	// 	klog.ErrorS(err, "failed to disable RPS RFS aRFS XPS", "nic", p.NICs())
+	// 	return
+	// }
 	return
 }

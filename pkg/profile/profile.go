@@ -1,6 +1,7 @@
 package profile
 
 import (
+	"usoftirqueue/pkg/nic"
 	"usoftirqueue/pkg/option"
 	"usoftirqueue/pkg/policy"
 	"usoftirqueue/pkg/system"
@@ -15,7 +16,7 @@ type Profile struct {
 	largeNode int
 	// vars
 	cpus *cpu.Info
-	nics []string
+	nics []*nic.NIC
 	// spec
 	policies map[string]func(opts ...option.OptionFunc) policy.Policy
 }
@@ -24,7 +25,7 @@ func New(dryrun bool, nicRegex string, largeNode, expectConnections int) (p *Pro
 
 	var (
 		cpus *cpu.Info
-		nics []string
+		nics []*nic.NIC
 	)
 
 	// get CPU count
@@ -35,7 +36,8 @@ func New(dryrun bool, nicRegex string, largeNode, expectConnections int) (p *Pro
 	klog.InfoS("current CPU", "total cpus", cpus.TotalThreads, "local cpus", cpus.Processors[0].NumThreads)
 
 	// get NICs
-	if nics, err = system.GetNICs(nicRegex); err != nil {
+
+	if nics, err = nic.List(nicRegex); err != nil {
 		klog.ErrorS(err, "failed to get NICs", "regexp", nicRegex)
 		return nil, err
 	}

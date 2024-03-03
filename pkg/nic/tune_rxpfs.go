@@ -30,21 +30,21 @@ func roundUpToNearestMultipleOf2(n int) int {
 	return (n + 1) & -2
 }
 
-func DisableRPSRFSXPS(nics []string, dryrun bool) (err error) {
+func DisableRPSRFSXPS(nics []*NIC, dryrun bool) (err error) {
 	klog.InfoS("disable RPS RFS aRFS XPS")
 	for _, eth := range nics {
-		if ch, _ := GetNICQueueChannel(eth); ch != nil {
+		if ch, _ := eth.GetQueueChannel(); ch != nil {
 			for i := 0; i < int(ch.CombinedCount); i++ {
-				err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/rx-%d/rps_cpus", eth, i), "0"))
-				err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/rx-%d/rps_flow_cnt", eth, i), "0"))
-				// err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/tx-%d/xps_cpus", eth, i), "0"))
+				err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/rx-%d/rps_cpus", eth.Name, i), "0"))
+				err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/rx-%d/rps_flow_cnt", eth.Name, i), "0"))
+				// err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/tx-%d/xps_cpus", eth.Name, i), "0"))
 			}
 			for i := 0; i < int(ch.RxCount); i++ {
-				err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/rx-%d/rps_cpus", eth, i), "0"))
-				err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/rx-%d/rps_flow_cnt", eth, i), "0"))
+				err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/rx-%d/rps_cpus", eth.Name, i), "0"))
+				err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/rx-%d/rps_flow_cnt", eth.Name, i), "0"))
 			}
 			// for i := 0; i < int(ch.TxCount); i++ {
-			// 	err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/tx-%d/xps_cpus", eth, i), "0"))
+			// 	err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/tx-%d/xps_cpus", eth.Name, i), "0"))
 			// }
 		}
 	}
@@ -53,7 +53,7 @@ func DisableRPSRFSXPS(nics []string, dryrun bool) (err error) {
 	return
 }
 
-func EnableRPSRFSXPS(nics []string, cpucount, conncount int, dryrun bool, opt *option.Option) (err error) {
+func EnableRPSRFSXPS(nics []*NIC, cpucount, conncount int, dryrun bool, opt *option.Option) (err error) {
 
 	// cpu bitmap for RPS
 	cpubm := getCPUBitmap(cpucount)
@@ -66,21 +66,21 @@ func EnableRPSRFSXPS(nics []string, cpucount, conncount int, dryrun bool, opt *o
 	}
 
 	// group nics according to flow mode
-	var nicGroups [][]string
+	var nicGroups [][]*NIC
 	switch opt.FlowMode {
 	case option.FlowModeAvgFromAllNIC:
-		nicGroups = [][]string{nics}
+		nicGroups = [][]*NIC{nics}
 	case option.FlowModeFromOneOfNIC:
 		for _, nic := range nics {
-			nicGroups = append(nicGroups, []string{nic})
+			nicGroups = append(nicGroups, []*NIC{nic})
 		}
 	case option.FlowModeSplitMainNIC:
 		for i, nic := range nics {
 			if i == 0 {
-				nicGroups = append(nicGroups, []string{nic})
+				nicGroups = append(nicGroups, []*NIC{nic})
 			} else {
 				if len(nicGroups) == 1 {
-					nicGroups = append(nicGroups, []string{})
+					nicGroups = append(nicGroups, []*NIC{})
 				}
 				nicGroups[1] = append(nicGroups[1], nic)
 			}
@@ -101,7 +101,7 @@ func EnableRPSRFSXPS(nics []string, cpucount, conncount int, dryrun bool, opt *o
 	for _, nicGroup := range nicGroups {
 		queuecount := 0
 		for _, eth := range nicGroup {
-			if ch, _ := GetNICQueueChannel(eth); ch != nil {
+			if ch, _ := eth.GetQueueChannel(); ch != nil {
 				if ch.CombinedCount > 0 {
 					queuecount += int(ch.CombinedCount)
 				} else {
@@ -116,18 +116,18 @@ func EnableRPSRFSXPS(nics []string, cpucount, conncount int, dryrun bool, opt *o
 		klog.InfoS("get connection count per queue", "nicgroup", nicGroup, "conncount", conncount, "conncountPerQueue", conncountPerQueue)
 
 		for _, eth := range nicGroup {
-			if ch, _ := GetNICQueueChannel(eth); ch != nil {
+			if ch, _ := eth.GetQueueChannel(); ch != nil {
 				for i := 0; i < int(ch.CombinedCount); i++ {
-					err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/rx-%d/rps_cpus", eth, i), cpubm))
-					err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/rx-%d/rps_flow_cnt", eth, i), ccpq))
-					// err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/tx-%d/xps_cpus", eth, i), cpubm))
+					err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/rx-%d/rps_cpus", eth.Name, i), cpubm))
+					err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/rx-%d/rps_flow_cnt", eth.Name, i), ccpq))
+					// err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/tx-%d/xps_cpus", eth.Name, i), cpubm))
 				}
 				for i := 0; i < int(ch.RxCount); i++ {
-					err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/rx-%d/rps_cpus", eth, i), cpubm))
-					err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/rx-%d/rps_flow_cnt", eth, i), ccpq))
+					err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/rx-%d/rps_cpus", eth.Name, i), cpubm))
+					err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/rx-%d/rps_flow_cnt", eth.Name, i), ccpq))
 				}
 				// for i := 0; i < int(ch.TxCount); i++ {
-				// 	err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/tx-%d/xps_cpus", eth, i), cpubm))
+				// 	err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/tx-%d/xps_cpus", eth.Name, i), cpubm))
 				// }
 			}
 		}

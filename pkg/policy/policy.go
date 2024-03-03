@@ -1,6 +1,10 @@
 package policy
 
-import "github.com/jaypipes/ghw/pkg/cpu"
+import (
+	"usoftirqueue/pkg/nic"
+
+	"github.com/jaypipes/ghw/pkg/cpu"
+)
 
 var (
 	Policies []Policy
@@ -12,5 +16,5 @@ type Policy interface {
 
 	DryRun() bool
 	CPUs() *cpu.Info
-	NICs() []string
+	NICs() []*nic.NIC
 }

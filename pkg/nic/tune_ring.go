@@ -7,10 +7,10 @@ import (
 	"k8s.io/klog/v2"
 )
 
-func TuneNICRingBufferMax(eth string, dryrun bool) error {
+func TuneNICRingBufferMax(eth *NIC, dryrun bool) error {
 
 	// get NIC ring
-	ring, err := GetNICRingSize(eth)
+	ring, err := eth.GetRingBuffer()
 	if err != nil {
 		return errors.Wrap(err, "failed to get NIC ring")
 	}
@@ -31,7 +31,7 @@ func TuneNICRingBufferMax(eth string, dryrun bool) error {
 			ring.TxPending = ring.TxMaxPending
 			ring.RxPending = ring.RxMaxPending
 
-			curr, err := SetNICRingSize(eth, *ring)
+			curr, err := eth.SetRingBuffer(*ring)
 			if err != nil {
 				return errors.Wrap(err, "failed to set NIC ring buffer")
 			}

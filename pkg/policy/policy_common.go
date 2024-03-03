@@ -19,12 +19,12 @@ type CommonPolicy struct {
 	dryrun bool
 	// vars
 	cpus *cpu.Info
-	nics []string
+	nics []*nic.NIC
 	// option
 	option *option.Option
 }
 
-func NewCommonPolicy(dryrun bool, cpu *cpu.Info, nics []string, opts ...option.OptionFunc) Policy {
+func NewCommonPolicy(dryrun bool, cpu *cpu.Info, nics []*nic.NIC, opts ...option.OptionFunc) Policy {
 	return &CommonPolicy{
 		name:   Common,
 		dryrun: dryrun,
@@ -46,7 +46,7 @@ func (p *CommonPolicy) CPUs() *cpu.Info {
 	return p.cpus
 }
 
-func (p *CommonPolicy) NICs() []string {
+func (p *CommonPolicy) NICs() []*nic.NIC {
 	return p.nics
 }
 
@@ -57,7 +57,7 @@ func (p *CommonPolicy) Apply() (err error) {
 	for _, eth := range p.nics {
 
 		// tune NIC queue channel to max
-		if err = nic.TuneNICQueueChannelMax(p.cpus.Processors[0].NumThreads, p.cpus.TotalThreads, eth, p.dryrun); err != nil {
+		if err = nic.TuneNICQueueChannelMax(eth, p.cpus.Processors[0].NumThreads, p.cpus.TotalThreads, p.dryrun); err != nil {
 			klog.ErrorS(err, "failed to tune NIC queue channel", "nic", eth)
 			break
 		}

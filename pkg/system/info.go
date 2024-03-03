@@ -1,13 +1,7 @@
 package system
 
 import (
-	"fmt"
-	"net"
-	"path/filepath"
-	"regexp"
 	"sort"
-	"strings"
-	"usoftirqueue/pkg/util/formatter"
 
 	"github.com/jaypipes/ghw"
 	"github.com/jaypipes/ghw/pkg/cpu"
@@ -31,41 +25,5 @@ func GetCPUInfo() (cpus *cpu.Info, err error) {
 		}
 	}
 	klog.InfoS("get cpus", "cpus", cpus.YAMLString())
-	return
-}
-
-// 获取网卡列表
-func GetNICs(regexpr string) (nics []string, err error) {
-
-	var (
-		reg     *regexp.Regexp
-		ifaces  []net.Interface
-		phyNICs []net.Interface
-	)
-
-	if reg, err = regexp.Compile(regexpr); err != nil {
-		return
-	}
-
-	if ifaces, err = net.Interfaces(); err != nil {
-		return
-	}
-
-	// filter virtual NIC
-	for _, iface := range ifaces {
-		dev, _ := filepath.EvalSymlinks(fmt.Sprintf("/sys/class/net/%s", iface.Name))
-		if strings.Contains(dev, "/virtual/net/") {
-			continue
-		}
-		phyNICs = append(phyNICs, iface)
-	}
-	klog.InfoS("get all phy NICs", "nics", formatter.NewYAML(phyNICs))
-
-	// filter NICs by regexpr
-	for _, iface := range phyNICs {
-		if reg.MatchString(iface.Name) {
-			nics = append(nics, iface.Name)
-		}
-	}
 	return
 }
