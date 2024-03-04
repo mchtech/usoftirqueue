@@ -3,17 +3,13 @@ package config
 import (
 	"fmt"
 	"os"
-	"strings"
 	"usoftirqueue/pkg/option"
 
 	"k8s.io/klog/v2"
 )
 
 func Write(file, value string) error {
-
-	bf, _ := os.ReadFile(file)
-	curr := strings.TrimSpace(string(bf))
-
+	curr := Read(file)
 	if option.DryRun {
 		klog.InfoS("dryrun mode: skip to write system config", "key", file, "value", fmt.Sprintf("%s -> %s", curr, value))
 		return nil
