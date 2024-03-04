@@ -2,11 +2,11 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"time"
 	"usoftirqueue/pkg/option"
 	"usoftirqueue/pkg/policy"
 	"usoftirqueue/pkg/profile"
+	"usoftirqueue/pkg/util/formatter"
 
 	"k8s.io/klog/v2"
 )
@@ -78,7 +78,7 @@ func main() {
 `)
 	flag.StringVar(&nicRegex, "option.nic-filter", nicRegex, "filter nic name by regexp")
 	flag.IntVar(&largeNodeThresh, "option.large-node-threshold", largeNodeThresh, "machine is considered as a large node (prefer steering policy), if cpu core count >")
-	flag.IntVar(&expectConnections, "option.expect-connections", expectConnections, fmt.Sprintf("required for RFS: estimated max concurrent connections that the node can process (default num-cpu:connections=%v)", policy.CoreToConnections))
+	flag.IntVar(&expectConnections, "option.expect-connections", expectConnections, "required for RFS: estimated max concurrent connections that the node can process\n"+formatter.NewTableFromMap(policy.CoreToConnections, []string{"cpu", "connections"}).String())
 	flag.IntVar(&policy.BaseConnectionsPerCore, "option.connections-per-core", policy.BaseConnectionsPerCore, "required for RFS: connections per cpu core (only valid when num-cpu does not exist in `num-cpu:connections` map)")
 	flag.Parse()
 
