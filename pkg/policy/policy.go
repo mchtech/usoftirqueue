@@ -1,8 +1,8 @@
 package policy
 
-var (
-	Policies []Policy
-)
+// var (
+// 	Policies []Policy
+// )
 
 type Policy interface {
 	Name() string

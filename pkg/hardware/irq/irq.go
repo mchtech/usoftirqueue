@@ -28,6 +28,10 @@ func (l IRQList) GetActivatedIRQs() (q []int) {
 	return
 }
 
+func (l IRQList) NumIRQ() int {
+	return len(l)
+}
+
 func New(irq string) IRQ {
 
 	irqInt, _ := strconv.Atoi(irq)

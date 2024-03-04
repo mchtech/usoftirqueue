@@ -2,11 +2,12 @@ package policy
 
 import (
 	"math"
+	"usoftirqueue/pkg/hardware/cpu"
 	"usoftirqueue/pkg/hardware/nic"
 	"usoftirqueue/pkg/option"
 	"usoftirqueue/pkg/tuner"
 
-	"github.com/jaypipes/ghw/pkg/cpu"
+	// "github.com/jaypipes/ghw/pkg/cpu"
 	"k8s.io/klog/v2"
 )
 
@@ -36,7 +37,7 @@ type SteeringPolicy struct {
 	tuner  *tuner.Tuner
 }
 
-func NewSteeringPolicy(cpu *cpu.Info, nics []*nic.NIC, opts ...option.OptionFunc) *SteeringPolicy {
+func NewSteeringPolicy(cpu *cpu.Topology, nics []*nic.NIC, opts ...option.OptionFunc) *SteeringPolicy {
 	return &SteeringPolicy{
 		CommonPolicy: NewCommonPolicy(cpu, nics),
 		name:         Steering,
@@ -51,7 +52,7 @@ func (p *SteeringPolicy) Name() string {
 
 func (p *SteeringPolicy) ExpectConnections() int {
 	if p.option.ExpectConnections == 0 {
-		cpuCount := int(p.cpus.TotalThreads)
+		cpuCount := p.cpus.NumCPU()
 		c, ok := CoreToConnections[cpuCount]
 		if !ok {
 			c = BaseConnectionsPerCore * cpuCount
@@ -93,7 +94,7 @@ func (p *SteeringPolicy) apply() (err error) {
 	// enable RPS RFS aRFS XPS
 	if err = p.tuner.EnableRPSRFSXPS(
 		p.nics,
-		int(p.cpus.TotalThreads),
+		p.cpus.NumCPU(),
 		p.ExpectConnections(),
 		p.option,
 	); err != nil {

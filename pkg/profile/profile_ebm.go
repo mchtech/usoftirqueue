@@ -27,7 +27,7 @@ TODO: other instance type (AMD EPYC: 8 more NUMA nodes)
 
 func (p *Profile) SetupEBM() (err error) {
 
-	numCPU := int(p.cpus.TotalThreads)
+	numCPU := p.cpus.NumCPU()
 
 	// no standard cores: 12c / 24c / 96c / 104c / 192c ... : numCPU != numIRQ
 	if numCPU&(numCPU-1) != 0 {

@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"usoftirqueue/pkg/hardware/cpu"
 	"usoftirqueue/pkg/hardware/nic"
 	"usoftirqueue/pkg/option"
 	"usoftirqueue/pkg/util"
 
-	"github.com/jaypipes/ghw/pkg/cpu"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 )
@@ -19,14 +19,14 @@ var (
 	rr   *util.RoundRobinIterator[int]
 )
 
-func (t *Tuner) TuneIRQ(eth *nic.NIC, cpus *cpu.Info, opt *option.Option) (err error) {
+func (t *Tuner) TuneIRQ(eth *nic.NIC, cpus *cpu.Topology, opt *option.Option) (err error) {
 
 	var desiredAffinity []int
 
 	// TODO: filter enabled
 	irqs := eth.IRQs
-	numIRQ := len(irqs)
-	numCore := int(cpus.TotalThreads)
+	numIRQ := irqs.NumIRQ()
+	numCore := cpus.NumCPU()
 
 	var numa int
 	switch opt.CPUSelectMask {
@@ -38,10 +38,10 @@ func (t *Tuner) TuneIRQ(eth *nic.NIC, cpus *cpu.Info, opt *option.Option) (err e
 		return fmt.Errorf("unknown CPUSelectMask: %d", opt.CPUSelectMask)
 	}
 	if numa >= 0 {
-		numCore = int(cpus.Processors[0].NumThreads)
+		numCore = cpus.NumLocalCPU(numa)
 	}
 
-	cores := util.GetCoreList(cpus, numa, false)
+	cores := cpus.CoreIDs(numa, false)
 	once.Do(func() {
 		rr = util.NewRoundRobinIterator(cores)
 		srr = util.NewScatterRoundRobinIterator(cores)

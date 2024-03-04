@@ -1,10 +1,11 @@
 package policy
 
 import (
+	"usoftirqueue/pkg/hardware/cpu"
 	"usoftirqueue/pkg/hardware/nic"
 	"usoftirqueue/pkg/tuner"
 
-	"github.com/jaypipes/ghw/pkg/cpu"
+	// "github.com/jaypipes/ghw/pkg/cpu"
 	"k8s.io/klog/v2"
 )
 
@@ -16,13 +17,13 @@ type CommonPolicy struct {
 	// interface
 	name string
 	// vars
-	cpus *cpu.Info
+	cpus *cpu.Topology
 	nics []*nic.NIC
 	// exec
 	tuner *tuner.Tuner
 }
 
-func NewCommonPolicy(cpu *cpu.Info, nics []*nic.NIC) *CommonPolicy {
+func NewCommonPolicy(cpu *cpu.Topology, nics []*nic.NIC) *CommonPolicy {
 	return &CommonPolicy{
 		name: Common,
 		cpus: cpu,

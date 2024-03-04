@@ -1,11 +1,11 @@
 package policy
 
 import (
+	"usoftirqueue/pkg/hardware/cpu"
 	"usoftirqueue/pkg/hardware/nic"
 	"usoftirqueue/pkg/option"
 	"usoftirqueue/pkg/tuner"
 
-	"github.com/jaypipes/ghw/pkg/cpu"
 	"k8s.io/klog/v2"
 )
 
@@ -20,7 +20,7 @@ type StaticPolicy struct {
 	tuner  *tuner.Tuner
 }
 
-func NewStaticPolicy(cpu *cpu.Info, nics []*nic.NIC, opts ...option.OptionFunc) *StaticPolicy {
+func NewStaticPolicy(cpu *cpu.Topology, nics []*nic.NIC, opts ...option.OptionFunc) *StaticPolicy {
 	return &StaticPolicy{
 		CommonPolicy: NewCommonPolicy(cpu, nics),
 		name:         Static,

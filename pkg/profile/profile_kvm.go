@@ -6,7 +6,7 @@ import (
 
 func (p *Profile) SetupKVM() (err error) {
 
-	numCPU := int(p.cpus.TotalThreads)
+	numCPU := p.cpus.NumCPU()
 
 	// large node: prefer to redirect softirqs to application cores
 	if numCPU > p.largeNode {

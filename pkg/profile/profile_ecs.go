@@ -7,7 +7,7 @@ import (
 
 func (p *Profile) SetupECS() (err error) {
 
-	numCPU := int(p.cpus.TotalThreads)
+	numCPU := p.cpus.NumCPU()
 
 	// no standard cores: 12c / 24c / 96c / 104c / 192c ... : numCPU != numIRQ
 	if numCPU&(numCPU-1) != 0 {

@@ -2,21 +2,7 @@ package util
 
 import (
 	"testing"
-	"usoftirqueue/pkg/hardware/cpu"
 )
-
-func TestGetCPUInfo(t *testing.T) {
-	cpu, err := cpu.GetCPUInfo()
-	if err != nil {
-		t.Errorf("GetCPUInfo error: %v", err)
-		return
-	}
-	cpus := GetCoreList(cpu, -1, false)
-	if len(cpus) != int(cpu.TotalThreads) {
-		t.Errorf("GetCoreList error: %v", err)
-		return
-	}
-}
 
 func TestRoundRobinIterator(t *testing.T) {
 

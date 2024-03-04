@@ -1,12 +1,13 @@
 package profile
 
 import (
+	"usoftirqueue/pkg/hardware/cpu"
 	hcpu "usoftirqueue/pkg/hardware/cpu"
 	"usoftirqueue/pkg/hardware/nic"
 	"usoftirqueue/pkg/option"
 	"usoftirqueue/pkg/policy"
 
-	"github.com/jaypipes/ghw/pkg/cpu"
+	// "github.com/jaypipes/ghw/pkg/cpu"
 	"k8s.io/klog/v2"
 )
 
@@ -14,25 +15,25 @@ type Profile struct {
 	// params
 	largeNode int
 	// vars
-	cpus *cpu.Info
+	cpus *cpu.Topology
 	nics []*nic.NIC
 	// spec
 	policies map[string]func(opts ...option.OptionFunc) policy.Policy
 }
 
-func New(nicRegex string, largeNode, expectConnections int) (p *Profile, err error) {
+func New(nicRegex string, largeNodeThresh, expectConnections int) (p *Profile, err error) {
 
 	var (
-		cpus *cpu.Info
+		cpus *cpu.Topology
 		nics []*nic.NIC
 	)
 
 	// get CPU count
-	if cpus, err = hcpu.GetCPUInfo(); err != nil {
+	if cpus, err = hcpu.List(); err != nil {
 		klog.ErrorS(err, "failed to get CPU info")
 		return nil, err
 	}
-	klog.InfoS("current CPU", "total cpus", cpus.TotalThreads, "local cpus", cpus.Processors[0].NumThreads)
+	klog.InfoS("current CPU", "numa count", cpus.NumNUMA(), "total cpus", cpus.NumCPU(), "local cpus", cpus.NumLocalCPU(0))
 
 	// get NICs
 
@@ -43,7 +44,7 @@ func New(nicRegex string, largeNode, expectConnections int) (p *Profile, err err
 	klog.InfoS("current NICs", "nics", nic.NICList(nics).Names(), "filter", nicRegex)
 
 	p = &Profile{
-		largeNode: largeNode,
+		largeNode: largeNodeThresh,
 		cpus:      cpus,
 		nics:      nics,
 		policies: map[string]func(opts ...option.OptionFunc) policy.Policy{

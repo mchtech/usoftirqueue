@@ -38,12 +38,12 @@ func (t *Tuner) TuneNICRingBufferMax(eth *nic.NIC) error {
 			if err != nil {
 				return errors.Wrap(err, "failed to set NIC ring buffer")
 			}
-			klog.InfoS("finish setting NIC ring buffer", "nic", eth.Name, "ring", curr)
+			klog.InfoS("finish setting NIC ring buffer", "nic", eth.Name, "ring", formatter.NewYAML(curr))
 		} else {
 			klog.InfoS("dryrun mode: skip setting NIC ring buffer", "nic", eth.Name)
 		}
 	} else {
-		klog.InfoS("no need to tune NIC ring buffer", "nic", eth.Name, "ring", ring)
+		klog.InfoS("no need to tune NIC ring buffer", "nic", eth.Name)
 	}
 
 	return nil
