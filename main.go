@@ -29,16 +29,19 @@ var (
 func main() {
 
 	var (
-		err error
-		p   *profile.Profile
+		err            error
+		p              *profile.Profile
+		userPolicy     policy.IRQPolicy
+		userPolicyOpts []option.OptionFunc
 	)
 
+	// klog flags
 	defer klog.Flush()
 	klog.InitFlags(nil)
 	flag.Set("logtostderr", "false")
 	flag.Set("log_file", logFile)
 	flag.Set("alsologtostderr", "true")
-
+	// prog flags
 	flag.BoolVar(&option.DryRun, "option.dry-run", false, "dry run")
 	flag.StringVar(&irqPolicy, "option.policy", irqPolicy, `
 ┌──────────┬────────────────────────────────────────────────┐
@@ -95,27 +98,44 @@ func main() {
 	flag.IntVar(&expectConnections, "option.expect-connections", expectConnections, "required for RFS: estimated max concurrent connections that the node can process\n"+formatter.NewTableFromMap(policy.CoreToConnections, []string{"cpu", "connections"}).String())
 	flag.IntVar(&policy.BaseConnectionsPerCore, "option.connections-per-core", policy.BaseConnectionsPerCore, "required for RFS: connections per cpu core (only valid when num-cpu does not exist in `num-cpu:connections` map)")
 	flag.Parse()
-
 	klog.InfoS("starting", "at", time.Now().Format(time.RFC3339Nano))
 
+	// user-override options
 	if irqPolicy == "auto" && (cpuStrategy != "auto" || cpuMask != "auto" || flowMode != "auto") {
 		klog.Error("--option.policy must be set together with --option.policy.cpu.strategy --option.policy.cpu.mask --option.policy.nic.flowmode")
 		os.Exit(1)
 		return
 	}
-
-	if len(queueRegexes) > 0 {
-		nic.RegisterNICQueueIRQFilter(queueRegexes)
+	if irqPolicy != "auto" {
+		userPolicy = policy.IRQPolicy(irqPolicy)
+	}
+	if cpuStrategy != "auto" {
+		userPolicyOpts = append(userPolicyOpts, option.WithCPUSelectStrategy(option.StringToCPUSelectStrategy[cpuStrategy]))
+	}
+	if cpuMask != "auto" {
+		userPolicyOpts = append(userPolicyOpts, option.WithCPUSelectMask(option.StringToCPUSelectMask[cpuMask]))
+	}
+	if flowMode != "auto" {
+		userPolicyOpts = append(userPolicyOpts, option.WithFlowMode(option.StringToFlowMode[flowMode]))
 	}
 
-	if p, err = profile.New(nicRegex, irqPolicy, cpuStrategy, cpuMask, flowMode, largeNodeThresh, expectConnections); err != nil {
-		klog.ErrorS(err, "failed to setup profile")
+	// reg queue irq filter
+	if err = nic.RegisterNICQueueIRQFilter(queueRegexes); err != nil {
+		klog.ErrorS(err, "failed to register NIC queue IRQ filter")
 		os.Exit(2)
+		return
+	}
+
+	// run
+	if p, err = profile.New(nicRegex, largeNodeThresh, expectConnections, userPolicy, userPolicyOpts...); err != nil {
+		klog.ErrorS(err, "failed to setup profile")
+		os.Exit(3)
 		return
 	}
 	if err = p.Run(); err != nil {
 		klog.ErrorS(err, "failed to optimize NIC")
-		os.Exit(3)
+		os.Exit(255)
 		return
 	}
+	klog.InfoS("NIC optimization finished")
 }

@@ -13,7 +13,8 @@ import (
 
 type Profile struct {
 	// params
-	largeNode int
+	largeNode         int
+	expectConnections int
 	// vars
 	board *board.BoardInfo
 	cpus  *cpu.Topology
@@ -21,11 +22,11 @@ type Profile struct {
 	// spec
 	policies map[policy.IRQPolicy]func(opts ...option.OptionFunc) policy.Policy
 	// overrides
-	irqPolicy policy.IRQPolicy
-	userOpts  []option.OptionFunc
+	userPolicy     policy.IRQPolicy
+	userPolicyOpts []option.OptionFunc
 }
 
-func New(nicRegex, irqPolicy, cpuStrategy, cpuMask, flowMode string, largeNodeThresh, expectConnections int) (p *Profile, err error) {
+func New(nicRegex string, largeNodeThresh, expectConnections int, userPolicy policy.IRQPolicy, userPolicyOpts ...option.OptionFunc) (p *Profile, err error) {
 
 	var (
 		bi   *board.BoardInfo
@@ -54,32 +55,15 @@ func New(nicRegex, irqPolicy, cpuStrategy, cpuMask, flowMode string, largeNodeTh
 	}
 	klog.InfoS("target NICs", "nics", nic.NICList(nics).Names(), "filter", nicRegex)
 
-	// user-override param
-	var (
-		ip   policy.IRQPolicy
-		opts []option.OptionFunc
-	)
-	if irqPolicy != "auto" {
-		ip = policy.IRQPolicy(irqPolicy)
-	}
-	if cpuStrategy != "auto" {
-		opts = append(opts, option.WithCPUSelectStrategy(option.StringToCPUSelectStrategy[cpuStrategy]))
-	}
-	if cpuMask != "auto" {
-		opts = append(opts, option.WithCPUSelectMask(option.StringToCPUSelectMask[cpuMask]))
-	}
-	if flowMode != "auto" {
-		opts = append(opts, option.WithFlowMode(option.StringToFlowMode[flowMode]))
-	}
-
 	// init profile
 	p = &Profile{
-		board:     bi,
-		cpus:      cpus,
-		nics:      nics,
-		largeNode: largeNodeThresh,
-		irqPolicy: ip,
-		userOpts:  opts,
+		board:             bi,
+		cpus:              cpus,
+		nics:              nics,
+		largeNode:         largeNodeThresh,
+		expectConnections: expectConnections,
+		userPolicy:        userPolicy,
+		userPolicyOpts:    userPolicyOpts,
 		policies: map[policy.IRQPolicy]func(opts ...option.OptionFunc) policy.Policy{
 			policy.Static: func(opts ...option.OptionFunc) policy.Policy {
 				return policy.NewStaticPolicy(cpus, nics, opts...)
@@ -100,8 +84,8 @@ func New(nicRegex, irqPolicy, cpuStrategy, cpuMask, flowMode string, largeNodeTh
 func (p *Profile) Run() (err error) {
 
 	// apply user-override policy
-	if p.irqPolicy != "" {
-		return p.SetupUser(p.irqPolicy, p.userOpts...)
+	if p.userPolicy != "" {
+		return p.SetupUser(p.userPolicy, p.userPolicyOpts...)
 	}
 
 	// apply auto-detect policy

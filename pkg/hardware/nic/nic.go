@@ -22,13 +22,19 @@ var nicQueueIRQFilter = map[string]*regexp.Regexp{
 	"ena":        regexp.MustCompile(`eth[0-9]+-Tx-Rx-[0-9]+`),
 }
 
-func RegisterNICQueueIRQFilter(driverregexes []string) {
+func RegisterNICQueueIRQFilter(driverregexes []string) (err error) {
 	for _, driverregex := range driverregexes {
 		idx := strings.Index(driverregex, ":")
+		if idx == -1 {
+			return fmt.Errorf("register NIC queue IRQ filter: unrecognized format: %s", driverregex)
+		}
 		d, r := driverregex[:idx], driverregex[idx+1:]
+		if nicQueueIRQFilter[d], err = regexp.Compile(r); err != nil {
+			return fmt.Errorf("register NIC queue IRQ filter: unrecognized regexp: %v", err)
+		}
 		klog.InfoS("register NIC queue IRQ filter", "driver", d, "regexp", r)
-		nicQueueIRQFilter[d] = regexp.MustCompile(r)
 	}
+	return
 }
 
 func GetNICQueueIRQFilter() map[string]*regexp.Regexp {
