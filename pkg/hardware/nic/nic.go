@@ -22,13 +22,13 @@ var nicQueueIRQFilter = map[string]*regexp.Regexp{
 	"ena":        regexp.MustCompile(`eth[0-9]+-Tx-Rx-[0-9]+`),
 }
 
-func RegisterNICQueueIRQFilter(driverregexes []string) (err error) {
-	for _, driverregex := range driverregexes {
-		idx := strings.Index(driverregex, ":")
+func RegisterNICQueueIRQFilter(driverQueueIRQRegexes []string) (err error) {
+	for _, driverQueueIRQRegex := range driverQueueIRQRegexes {
+		idx := strings.Index(driverQueueIRQRegex, ":")
 		if idx == -1 {
-			return fmt.Errorf("register NIC queue IRQ filter: unrecognized format: %s", driverregex)
+			return fmt.Errorf("register NIC queue IRQ filter: unrecognized format: %s", driverQueueIRQRegex)
 		}
-		d, r := driverregex[:idx], driverregex[idx+1:]
+		d, r := driverQueueIRQRegex[:idx], driverQueueIRQRegex[idx+1:]
 		if nicQueueIRQFilter[d], err = regexp.Compile(r); err != nil {
 			return fmt.Errorf("register NIC queue IRQ filter: unrecognized regexp: %v", err)
 		}
