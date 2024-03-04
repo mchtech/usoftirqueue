@@ -96,13 +96,13 @@ func main() {
 	flag.IntVar(&policy.BaseConnectionsPerCore, "option.connections-per-core", policy.BaseConnectionsPerCore, "required for RFS: connections per cpu core (only valid when num-cpu does not exist in `num-cpu:connections` map)")
 	flag.Parse()
 
+	klog.InfoS("starting", "at", time.Now().Format(time.RFC3339Nano))
+
 	if irqPolicy == "auto" && (cpuStrategy != "auto" || cpuMask != "auto" || flowMode != "auto") {
 		klog.Error("--option.policy must be set together with --option.policy.cpu.strategy --option.policy.cpu.mask --option.policy.nic.flowmode")
 		os.Exit(1)
 		return
 	}
-
-	klog.InfoS("starting", "at", time.Now().Format(time.RFC3339Nano))
 
 	if len(queueRegexes) > 0 {
 		nic.RegisterNICQueueIRQFilter(queueRegexes)

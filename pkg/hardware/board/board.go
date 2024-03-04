@@ -8,24 +8,24 @@ import (
 	"k8s.io/klog/v2"
 )
 
-type SystemInfo struct {
+type BoardInfo struct {
 	ChassisVendor string `json:"chassis"`
 	ProductName   string `json:"product"`
 	BIOSVendor    string `json:"bios"`
 }
 
-func GetSystemInfo() (systemInfo *SystemInfo, err error) {
-	si := &SystemInfo{}
-	if si.ChassisVendor, err = getChassisVendor(); err != nil {
+func Collect() (boardInfo *BoardInfo, err error) {
+	bi := &BoardInfo{}
+	if bi.ChassisVendor, err = getChassisVendor(); err != nil {
 		return
 	}
-	if si.ProductName, err = getProductName(); err != nil {
+	if bi.ProductName, err = getProductName(); err != nil {
 		return
 	}
-	if si.BIOSVendor, err = getBIOSVendor(); err != nil {
+	if bi.BIOSVendor, err = getBIOSVendor(); err != nil {
 		return
 	}
-	systemInfo = si
+	boardInfo = bi
 	return
 }
 

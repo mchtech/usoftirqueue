@@ -15,52 +15,71 @@ type Profile struct {
 	// params
 	largeNode int
 	// vars
-	board *board.SystemInfo
+	board *board.BoardInfo
 	cpus  *cpu.Topology
 	nics  []*nic.NIC
 	// spec
 	policies map[policy.IRQPolicy]func(opts ...option.OptionFunc) policy.Policy
 	// overrides
-	irqPolicy   *policy.IRQPolicy
-	cpuStrategy *option.CPUSelectStrategy
-	cpuMask     *option.CPUSelectMask
-	flowMode    *option.FlowMode
+	irqPolicy policy.IRQPolicy
+	userOpts  []option.OptionFunc
 }
 
-func New(nicRegex string, irqPolicy string, cpuPolicy string, cpuMask string, flowMode string, largeNodeThresh int, expectConnections int) (p *Profile, err error) {
+func New(nicRegex, irqPolicy, cpuStrategy, cpuMask, flowMode string, largeNodeThresh, expectConnections int) (p *Profile, err error) {
 
 	var (
-		si   *board.SystemInfo
+		bi   *board.BoardInfo
 		cpus *cpu.Topology
 		nics []*nic.NIC
 	)
 
 	// board info
-	if si, err = board.GetSystemInfo(); err != nil {
-		klog.ErrorS(err, "failed to get system info")
+	if bi, err = board.Collect(); err != nil {
+		klog.ErrorS(err, "failed to get board info")
 		return
 	}
-	klog.InfoS("system info", "chassis", si.ChassisVendor, "product", si.ProductName, "bios", si.BIOSVendor)
+	klog.InfoS("board info", "chassis", bi.ChassisVendor, "product", bi.ProductName, "bios", bi.BIOSVendor)
 
-	// get CPU count
+	// get CPU info
 	if cpus, err = cpu.List(); err != nil {
 		klog.ErrorS(err, "failed to get CPU info")
 		return nil, err
 	}
-	klog.InfoS("current CPU", "numa count", cpus.NumNUMA(), "total cpus", cpus.NumCPU(), "local cpus", cpus.NumLocalCPU(0))
+	klog.InfoS("current CPU", "numa", cpus.NumNUMA(), "total", cpus.NumCPU(), "local", cpus.NumLocalCPU(0))
 
 	// get NICs
 	if nics, err = nic.List(nicRegex); err != nil {
 		klog.ErrorS(err, "failed to get NICs", "regexp", nicRegex)
 		return nil, err
 	}
-	klog.InfoS("current NICs", "nics", nic.NICList(nics).Names(), "filter", nicRegex)
+	klog.InfoS("target NICs", "nics", nic.NICList(nics).Names(), "filter", nicRegex)
 
+	// user-override param
+	var (
+		ip   policy.IRQPolicy
+		opts []option.OptionFunc
+	)
+	if irqPolicy != "auto" {
+		ip = policy.IRQPolicy(irqPolicy)
+	}
+	if cpuStrategy != "auto" {
+		opts = append(opts, option.WithCPUSelectStrategy(option.StringToCPUSelectStrategy[cpuStrategy]))
+	}
+	if cpuMask != "auto" {
+		opts = append(opts, option.WithCPUSelectMask(option.StringToCPUSelectMask[cpuMask]))
+	}
+	if flowMode != "auto" {
+		opts = append(opts, option.WithFlowMode(option.StringToFlowMode[flowMode]))
+	}
+
+	// init profile
 	p = &Profile{
-		largeNode: largeNodeThresh,
-		board:     si,
+		board:     bi,
 		cpus:      cpus,
 		nics:      nics,
+		largeNode: largeNodeThresh,
+		irqPolicy: ip,
+		userOpts:  opts,
 		policies: map[policy.IRQPolicy]func(opts ...option.OptionFunc) policy.Policy{
 			policy.Static: func(opts ...option.OptionFunc) policy.Policy {
 				return policy.NewStaticPolicy(cpus, nics, opts...)
@@ -75,43 +94,14 @@ func New(nicRegex string, irqPolicy string, cpuPolicy string, cpuMask string, fl
 			},
 		},
 	}
-
-	// user override param
-	if irqPolicy != "auto" {
-		u := policy.IRQPolicy(irqPolicy)
-		p.irqPolicy = &u
-	}
-	if cpuPolicy != "auto" {
-		u := option.StringToCPUSelectStrategy[cpuPolicy]
-		p.cpuStrategy = &u
-	}
-	if cpuMask != "auto" {
-		u := option.StringToCPUSelectMask[cpuMask]
-		p.cpuMask = &u
-	}
-	if flowMode != "auto" {
-		u := option.StringToFlowMode[flowMode]
-		p.flowMode = &u
-	}
 	return
 }
 
 func (p *Profile) Run() (err error) {
 
 	// apply user-override policy
-	if p.irqPolicy != nil {
-		var opts []option.OptionFunc
-		if p.cpuStrategy != nil {
-			opts = append(opts, option.WithCPUSelectStrategy(*p.cpuStrategy))
-		}
-		if p.cpuMask != nil {
-			opts = append(opts, option.WithCPUSelectMask(*p.cpuMask))
-		}
-		if p.flowMode != nil {
-			opts = append(opts, option.WithFlowMode(*p.flowMode))
-		}
-		err = p.SetupUser(*p.irqPolicy, opts...)
-		return
+	if p.irqPolicy != "" {
+		return p.SetupUser(p.irqPolicy, p.userOpts...)
 	}
 
 	// apply auto-detect policy

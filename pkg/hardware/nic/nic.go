@@ -115,7 +115,7 @@ func (n *NIC) getDevice() string {
 	}
 
 	// n.Device = s
-	klog.InfoS("get dev", "nic", n.Name, "device", dev)
+	klog.InfoS("get device", "nic", n.Name, "device", dev)
 	return dev
 }
 
@@ -137,18 +137,19 @@ func (n *NIC) getIRQs() (irqs irq.IRQList) {
 		filter = nicQueueIRQFilter[""]
 	}
 
-	// get irqs in dir dev
+	// get irqs in dev dir
+	// TODO: no MSI-X IRQ?
 	var irqNums []string
 	irqNumsPath, _ := filepath.Glob(fmt.Sprintf("%s/msi_irqs/*", n.Device))
 	for _, p := range irqNumsPath {
 		irqNums = append(irqNums, filepath.Base(p))
 	}
-	klog.InfoS("get irqs", "nic", n.Name, "irqs", irqNums)
+	klog.InfoS("get irq numbers", "nic", n.Name, "irqs", irqNums)
 
 	// get irq info
 	for _, irqNum := range irqNums {
 		irq := irq.New(irqNum)
-		klog.InfoS("get irq", "nic", n.Name, "irq", irq)
+		klog.InfoS("get irq info", "nic", n.Name, "irq", irq)
 		if filter != nil {
 			for _, name := range irq.Names {
 				if filter.MatchString(name) {
@@ -162,7 +163,7 @@ func (n *NIC) getIRQs() (irqs irq.IRQList) {
 	}
 
 	// n.IRQs = irqs
-	klog.InfoS("get irqs", "nic", n.Name, "irqs", formatter.NewYAML(irqs))
+	klog.InfoS("filter TX/RX irqs", "nic", n.Name, "irqs", formatter.NewYAML(irqs))
 	return
 }
 
