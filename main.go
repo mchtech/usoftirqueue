@@ -4,7 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"time"
-	"usoftirqueue/pkg/hardware/vendor"
+	"usoftirqueue/pkg/hardware/board"
 	"usoftirqueue/pkg/option"
 	"usoftirqueue/pkg/policy"
 	"usoftirqueue/pkg/profile"
@@ -28,7 +28,7 @@ func main() {
 
 	var (
 		err error
-		si  *vendor.SystemInfo
+		si  *board.SystemInfo
 		p   *profile.Profile
 	)
 
@@ -48,7 +48,7 @@ func main() {
 
 	klog.InfoS("starting", "at", time.Now().Format(time.RFC3339Nano))
 
-	if si, err = vendor.GetSystemInfo(); err != nil {
+	if si, err = board.GetSystemInfo(); err != nil {
 		klog.ErrorS(err, "failed to get system info")
 		return
 	}
