@@ -32,7 +32,7 @@ func (p *Profile) SetupEBM() (err error) {
 	// no standard cores: 12c / 24c / 96c / 104c / 192c ... : numCPU != numIRQ
 	if numCPU&(numCPU-1) != 0 {
 		return p.policies[policy.Steering](
-			// option.WithCPUSelectPolicy(option.CPUSelectPolicyScatter), // default
+			// option.WithCPUSelectStrategy(option.CPUSelectStrategyScatter), // default
 			// option.WithCPUSelectMask(option.CPUSelectMaskAll),         // default
 			option.WithFlowMode(option.FlowModeCloudK8sENI),
 		).Apply()
@@ -40,23 +40,23 @@ func (p *Profile) SetupEBM() (err error) {
 
 	if len(p.nics) > 2 {
 		klog.InfoS("num nics > 2",
-			"CPUSelectPolicy", "CPUSelectPolicyScatter",
+			"CPUSelectStrategy", "CPUSelectStrategyScatter",
 			"CPUSelectMask", "CPUSelectMaskAll",
-			"FlowMode", "FlowModeFromOneOfNIC --> FlowModeSplitMainNIC",
+			"FlowMode", "FlowModeFromOneOfNIC --> FlowModeCloudK8sENI",
 		)
 		return p.policies[policy.Steering](
-			// option.WithCPUSelectPolicy(option.CPUSelectPolicyScatter), // default
+			// option.WithCPUSelectStrategy(option.CPUSelectStrategyScatter), // default
 			// option.WithCPUSelectMask(option.CPUSelectMaskAll),         // default
 			option.WithFlowMode(option.FlowModeCloudK8sENI),
 		).Apply()
 	} else {
 		klog.InfoS("num nics ≤ 2",
-			"CPUSelectPolicy", "CPUSelectPolicyScatter",
+			"CPUSelectStrategy", "CPUSelectStrategyScatter",
 			"CPUSelectMask", "CPUSelectMaskLocalNUMA",
-			"FlowMode", "FlowModeFromOneOfNIC --> FlowModeSplitMainNIC",
+			"FlowMode", "FlowModeFromOneOfNIC --> FlowModeCloudK8sENI",
 		)
 		return p.policies[policy.Steering](
-			// option.WithCPUSelectPolicy(option.CPUSelectPolicyScatter), // default
+			// option.WithCPUSelectStrategy(option.CPUSelectStrategyScatter), // default
 			option.WithCPUSelectMask(option.CPUSelectMaskLocalNUMA),
 			option.WithFlowMode(option.FlowModeCloudK8sENI),
 		).Apply()
