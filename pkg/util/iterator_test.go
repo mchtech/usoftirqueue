@@ -4,6 +4,19 @@ import (
 	"testing"
 )
 
+// return two slices are same
+func IsSameSlice[T comparable](a, b []T) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
 func TestRoundRobinIterator(t *testing.T) {
 
 	cpus := []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}

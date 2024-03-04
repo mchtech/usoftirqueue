@@ -22,8 +22,17 @@ var nicQueueIRQFilter = map[string]*regexp.Regexp{
 	"ena":        regexp.MustCompile(`eth[0-9]+-Tx-Rx-[0-9]+`),
 }
 
-func UpdateNICQueueIRQFilter(driver, regex string) {
-	nicQueueIRQFilter[driver] = regexp.MustCompile(regex)
+func RegisterNICQueueIRQFilter(driverregexes []string) {
+	for _, driverregex := range driverregexes {
+		idx := strings.Index(driverregex, ":")
+		d, r := driverregex[:idx], driverregex[idx+1:]
+		klog.InfoS("register NIC queue IRQ filter", "driver", d, "regexp", r)
+		nicQueueIRQFilter[d] = regexp.MustCompile(r)
+	}
+}
+
+func GetNICQueueIRQFilter() map[string]*regexp.Regexp {
+	return nicQueueIRQFilter
 }
 
 type NIC struct {
@@ -124,6 +133,9 @@ func (n *NIC) getIRQs() (irqs irq.IRQList) {
 
 	// get irq filter
 	filter := nicQueueIRQFilter[n.Driver]
+	if filter == nil {
+		filter = nicQueueIRQFilter[""]
+	}
 
 	// get irqs in dir dev
 	var irqNums []string

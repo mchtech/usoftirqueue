@@ -3,9 +3,11 @@ package main
 import (
 	"flag"
 	"time"
+	"usoftirqueue/pkg/hardware/nic"
 	"usoftirqueue/pkg/option"
 	"usoftirqueue/pkg/policy"
 	"usoftirqueue/pkg/profile"
+	"usoftirqueue/pkg/util"
 	"usoftirqueue/pkg/util/formatter"
 
 	"k8s.io/klog/v2"
@@ -18,6 +20,7 @@ var (
 	cpuMask           = "auto"
 	flowMode          = "auto"
 	nicRegex          = `^eth[\d]+`
+	queueRegexes      util.ArrayFlags
 	largeNodeThresh   = 16
 	expectConnections = 0
 )
@@ -36,14 +39,14 @@ func main() {
 	flag.Set("alsologtostderr", "true")
 
 	flag.BoolVar(&option.DryRun, "option.dry-run", false, "dry run")
-	flag.StringVar(&irqPolicy, "option.policy", irqPolicy, `static | steering
+	flag.StringVar(&irqPolicy, "option.policy", irqPolicy, `
 ┌──────────┬───────────────────────────────────────────────────────────────────────┐
 │ static   │ set NIC hardirq affinity                                              │
 ├──────────┼───────────────────────────────────────────────────────────────────────┤
 │ steering │ set NIC hardirq affinity and use RPS/RFS/aRFS/XPS to steering softirq │
 └──────────┴───────────────────────────────────────────────────────────────────────┘
 `)
-	flag.StringVar(&cpuStrategy, "option.policy.cpu.strategy", cpuStrategy, `scatter | roundrobin
+	flag.StringVar(&cpuStrategy, "option.policy.cpu.strategy", cpuStrategy, `
 ┌────────────┬───────────────────────────────────────────┐
 │ scatter    │ scatter cores if remained NumIRQ < NumCPU │
 │            │ 0 1 2 3 4 5 6 7 0 2 4 6                   │
@@ -59,14 +62,14 @@ func main() {
 │            │ ......                                    │
 └────────────┴───────────────────────────────────────────┘
 `)
-	flag.StringVar(&cpuMask, "option.policy.cpu.mask", cpuMask, `all | local_numa
+	flag.StringVar(&cpuMask, "option.policy.cpu.mask", cpuMask, `
 ┌────────────┬──────────────────────────────────────────────┐
 │ all        │ use all cores                                │
 ├────────────┼──────────────────────────────────────────────┤
 │ local_numa │ use cores of same NUMA node as NIC installed │
 └────────────┴──────────────────────────────────────────────┘
 `)
-	flag.StringVar(&flowMode, "option.policy.nic.flowmode", flowMode, `one_of_all | avg_from_all | cloud_k8s_eni
+	flag.StringVar(&flowMode, "option.policy.nic.flowmode", flowMode, `
 ┌───────────────┬──────────────────────────────────────────┐
 │ one_of_all    │ RX/TX from one of all NICs               │
 ├───────────────┼──────────────────────────────────────────┤
@@ -77,10 +80,15 @@ func main() {
 └───────────────┴──────────────────────────────────────────┘
 `)
 	flag.StringVar(&nicRegex, "option.nic-filter", nicRegex, "filter nic name by regexp")
+	flag.Var(&queueRegexes, "option.irq-filter", "filter nic rx/tx queue irq name by regexp (can be specified multiple times)\nformat: <driver>:<regexp>\n"+formatter.NewTableFromMap(nic.GetNICQueueIRQFilter(), []string{"driver", "regexp"}).String())
 	flag.IntVar(&largeNodeThresh, "option.large-node-threshold", largeNodeThresh, "machine is considered as a large node (prefer steering policy), if cpu core count >")
 	flag.IntVar(&expectConnections, "option.expect-connections", expectConnections, "required for RFS: estimated max concurrent connections that the node can process\n"+formatter.NewTableFromMap(policy.CoreToConnections, []string{"cpu", "connections"}).String())
 	flag.IntVar(&policy.BaseConnectionsPerCore, "option.connections-per-core", policy.BaseConnectionsPerCore, "required for RFS: connections per cpu core (only valid when num-cpu does not exist in `num-cpu:connections` map)")
 	flag.Parse()
+
+	if len(queueRegexes) > 0 {
+		nic.RegisterNICQueueIRQFilter(queueRegexes)
+	}
 
 	klog.InfoS("starting", "at", time.Now().Format(time.RFC3339Nano))
 
