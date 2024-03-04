@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"os"
 	"time"
 	"usoftirqueue/pkg/hardware/nic"
 	"usoftirqueue/pkg/option"
@@ -39,14 +40,14 @@ func main() {
 	flag.Set("alsologtostderr", "true")
 
 	flag.BoolVar(&option.DryRun, "option.dry-run", false, "dry run")
-	flag.StringVar(&irqPolicy, "option.policy", irqPolicy, `
+	flag.StringVar(&irqPolicy, "custom.policy", irqPolicy, `
 ┌──────────┬───────────────────────────────────────────────────────────────────────┐
 │ static   │ set NIC hardirq affinity                                              │
 ├──────────┼───────────────────────────────────────────────────────────────────────┤
 │ steering │ set NIC hardirq affinity and use RPS/RFS/aRFS/XPS to steering softirq │
 └──────────┴───────────────────────────────────────────────────────────────────────┘
 `)
-	flag.StringVar(&cpuStrategy, "option.policy.cpu.strategy", cpuStrategy, `
+	flag.StringVar(&cpuStrategy, "custom.policy.cpu.strategy", cpuStrategy, `
 ┌────────────┬───────────────────────────────────────────┐
 │ scatter    │ scatter cores if remained NumIRQ < NumCPU │
 │            │ 0 1 2 3 4 5 6 7 0 2 4 6                   │
@@ -62,14 +63,14 @@ func main() {
 │            │ ......                                    │
 └────────────┴───────────────────────────────────────────┘
 `)
-	flag.StringVar(&cpuMask, "option.policy.cpu.mask", cpuMask, `
+	flag.StringVar(&cpuMask, "custom.policy.cpu.mask", cpuMask, `
 ┌────────────┬──────────────────────────────────────────────┐
 │ all        │ use all cores                                │
 ├────────────┼──────────────────────────────────────────────┤
 │ local_numa │ use cores of same NUMA node as NIC installed │
 └────────────┴──────────────────────────────────────────────┘
 `)
-	flag.StringVar(&flowMode, "option.policy.nic.flowmode", flowMode, `
+	flag.StringVar(&flowMode, "custom.policy.nic.flowmode", flowMode, `
 ┌───────────────┬──────────────────────────────────────────┐
 │ one_of_all    │ RX/TX from one of all NICs               │
 ├───────────────┼──────────────────────────────────────────┤
@@ -86,18 +87,26 @@ func main() {
 	flag.IntVar(&policy.BaseConnectionsPerCore, "option.connections-per-core", policy.BaseConnectionsPerCore, "required for RFS: connections per cpu core (only valid when num-cpu does not exist in `num-cpu:connections` map)")
 	flag.Parse()
 
-	if len(queueRegexes) > 0 {
-		nic.RegisterNICQueueIRQFilter(queueRegexes)
+	if irqPolicy == "auto" && (cpuStrategy != "auto" || cpuMask != "auto" || flowMode != "auto") {
+		klog.Error("--custom.policy must be set together with --custom.policy.cpu.strategy --custom.policy.cpu.mask --custom.policy.nic.flowmode")
+		os.Exit(1)
+		return
 	}
 
 	klog.InfoS("starting", "at", time.Now().Format(time.RFC3339Nano))
 
+	if len(queueRegexes) > 0 {
+		nic.RegisterNICQueueIRQFilter(queueRegexes)
+	}
+
 	if p, err = profile.New(nicRegex, irqPolicy, cpuStrategy, cpuMask, flowMode, largeNodeThresh, expectConnections); err != nil {
 		klog.ErrorS(err, "failed to setup profile")
+		os.Exit(2)
 		return
 	}
 	if err = p.Run(); err != nil {
 		klog.ErrorS(err, "failed to optimize NIC")
+		os.Exit(3)
 		return
 	}
 }
