@@ -2,7 +2,6 @@ package policy
 
 import (
 	"usoftirqueue/pkg/hardware/nic"
-	"usoftirqueue/pkg/option"
 	"usoftirqueue/pkg/tuner"
 
 	"github.com/jaypipes/ghw/pkg/cpu"
@@ -19,19 +18,17 @@ type CommonPolicy struct {
 	// vars
 	cpus *cpu.Info
 	nics []*nic.NIC
-	// option
-	option *option.Option
 	// exec
 	tuner *tuner.Tuner
 }
 
-func NewCommonPolicy(cpu *cpu.Info, nics []*nic.NIC, opts ...option.OptionFunc) Policy {
+func NewCommonPolicy(cpu *cpu.Info, nics []*nic.NIC) *CommonPolicy {
 	return &CommonPolicy{
-		name:   Common,
-		cpus:   cpu,
-		nics:   nics,
-		option: option.ParseOptions(opts...),
-		tuner:  tuner.New(),
+		name: Common,
+		cpus: cpu,
+		nics: nics,
+		// option: option.ParseOptions(opts...),
+		tuner: tuner.New(),
 	}
 }
 
@@ -39,17 +36,9 @@ func (p *CommonPolicy) Name() string {
 	return p.name
 }
 
-func (p *CommonPolicy) CPUs() *cpu.Info {
-	return p.cpus
-}
-
-func (p *CommonPolicy) NICs() []*nic.NIC {
-	return p.nics
-}
-
 func (p *CommonPolicy) Apply() (err error) {
 
-	klog.InfoS("apply policy", "name", p.Name())
+	klog.InfoS("apply policy", "name", p.name)
 
 	for _, eth := range p.nics {
 		// tune NIC queue channel to max

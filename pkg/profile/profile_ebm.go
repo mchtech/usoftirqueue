@@ -31,7 +31,7 @@ func (p *Profile) SetupEBM() (err error) {
 
 	// no standard cores: 12c / 24c / 96c / 104c / 192c ... : numCPU != numIRQ
 	if numCPU&(numCPU-1) != 0 {
-		return p.policies[policy.Isolate](
+		return p.policies[policy.Steering](
 			// option.WithCPUSelectPolicy(option.CPUSelectPolicyScatter), // default
 			// option.WithCPUSelectMask(option.CPUSelectMaskAll),         // default
 			option.WithFlowMode(option.FlowModeSplitMainNIC),
@@ -44,7 +44,7 @@ func (p *Profile) SetupEBM() (err error) {
 			"CPUSelectMask", "CPUSelectMaskAll",
 			"FlowMode", "FlowModeFromOneOfNIC --> FlowModeSplitMainNIC",
 		)
-		return p.policies[policy.Isolate](
+		return p.policies[policy.Steering](
 			// option.WithCPUSelectPolicy(option.CPUSelectPolicyScatter), // default
 			// option.WithCPUSelectMask(option.CPUSelectMaskAll),         // default
 			option.WithFlowMode(option.FlowModeSplitMainNIC),
@@ -55,7 +55,7 @@ func (p *Profile) SetupEBM() (err error) {
 			"CPUSelectMask", "CPUSelectMaskLocalNUMA",
 			"FlowMode", "FlowModeFromOneOfNIC --> FlowModeSplitMainNIC",
 		)
-		return p.policies[policy.Isolate](
+		return p.policies[policy.Steering](
 			// option.WithCPUSelectPolicy(option.CPUSelectPolicyScatter), // default
 			option.WithCPUSelectMask(option.CPUSelectMaskLocalNUMA),
 			option.WithFlowMode(option.FlowModeSplitMainNIC),

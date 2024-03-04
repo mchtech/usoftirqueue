@@ -47,16 +47,16 @@ func New(nicRegex string, largeNode, expectConnections int) (p *Profile, err err
 		cpus:      cpus,
 		nics:      nics,
 		policies: map[string]func(opts ...option.OptionFunc) policy.Policy{
-			policy.Spread: func(opts ...option.OptionFunc) policy.Policy {
-				return policy.NewSpreadPolicy(cpus, nics, opts...)
+			policy.Static: func(opts ...option.OptionFunc) policy.Policy {
+				return policy.NewStaticPolicy(cpus, nics, opts...)
 			},
-			policy.Isolate: func(opts ...option.OptionFunc) policy.Policy {
+			policy.Steering: func(opts ...option.OptionFunc) policy.Policy {
 				var newOpts []option.OptionFunc
 				if expectConnections != 0 {
 					newOpts = append(newOpts, option.WithExpectConnections(expectConnections))
 				}
 				newOpts = append(newOpts, opts...)
-				return policy.NewIsolatePolicy(cpus, nics, newOpts...)
+				return policy.NewSteeringPolicy(cpus, nics, newOpts...)
 			},
 		},
 	}

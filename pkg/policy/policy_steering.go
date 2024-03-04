@@ -25,33 +25,33 @@ var (
 	}
 )
 
-const Isolate = "isolate"
+const Steering = "steering"
 
-var _ Policy = &IsolatePolicy{}
+var _ Policy = &SteeringPolicy{}
 
-type IsolatePolicy struct {
-	Policy
+type SteeringPolicy struct {
+	*CommonPolicy
 	name   string
 	option *option.Option
 	tuner  *tuner.Tuner
 }
 
-func NewIsolatePolicy(cpu *cpu.Info, nics []*nic.NIC, opts ...option.OptionFunc) Policy {
-	return &IsolatePolicy{
-		Policy: NewCommonPolicy(cpu, nics),
-		name:   Isolate,
-		option: option.ParseOptions(opts...),
-		tuner:  tuner.New(),
+func NewSteeringPolicy(cpu *cpu.Info, nics []*nic.NIC, opts ...option.OptionFunc) *SteeringPolicy {
+	return &SteeringPolicy{
+		CommonPolicy: NewCommonPolicy(cpu, nics),
+		name:         Steering,
+		option:       option.ParseOptions(opts...),
+		tuner:        tuner.New(),
 	}
 }
 
-func (p *IsolatePolicy) Name() string {
+func (p *SteeringPolicy) Name() string {
 	return p.name
 }
 
-func (p *IsolatePolicy) ExpectConnections() int {
+func (p *SteeringPolicy) ExpectConnections() int {
 	if p.option.ExpectConnections == 0 {
-		cpuCount := int(p.CPUs().TotalThreads)
+		cpuCount := int(p.cpus.TotalThreads)
 		c, ok := CoreToConnections[cpuCount]
 		if !ok {
 			c = BaseConnectionsPerCore * cpuCount
@@ -61,11 +61,11 @@ func (p *IsolatePolicy) ExpectConnections() int {
 	return p.option.ExpectConnections
 }
 
-func (p *IsolatePolicy) Apply() (err error) {
+func (p *SteeringPolicy) Apply() (err error) {
 
 	klog.InfoS("apply policy", "name", p.Name())
 
-	if err = p.Policy.Apply(); err != nil {
+	if err = p.CommonPolicy.Apply(); err != nil {
 		return
 	}
 	if err = p.apply(); err != nil {
@@ -74,7 +74,7 @@ func (p *IsolatePolicy) Apply() (err error) {
 	return
 }
 
-func (p *IsolatePolicy) apply() (err error) {
+func (p *SteeringPolicy) apply() (err error) {
 
 	// stop irqbalance
 	if err = p.tuner.StopIRQBalance(); err != nil {
@@ -83,8 +83,8 @@ func (p *IsolatePolicy) apply() (err error) {
 	}
 
 	// tune IRQs
-	for _, eth := range p.NICs() {
-		if err = p.tuner.TuneIRQ(eth, p.CPUs(), p.option); err != nil {
+	for _, eth := range p.nics {
+		if err = p.tuner.TuneIRQ(eth, p.cpus, p.option); err != nil {
 			klog.ErrorS(err, "failed to tune IRQs", "nic", eth.Name)
 			return
 		}
@@ -92,12 +92,12 @@ func (p *IsolatePolicy) apply() (err error) {
 
 	// enable RPS RFS aRFS XPS
 	if err = p.tuner.EnableRPSRFSXPS(
-		p.NICs(),
-		int(p.CPUs().TotalThreads),
+		p.nics,
+		int(p.cpus.TotalThreads),
 		p.ExpectConnections(),
 		p.option,
 	); err != nil {
-		klog.ErrorS(err, "failed to disable RPS RFS aRFS XPS", "nic", p.NICs())
+		klog.ErrorS(err, "failed to disable RPS RFS aRFS XPS", "nic", p.nics)
 		return
 	}
 	return

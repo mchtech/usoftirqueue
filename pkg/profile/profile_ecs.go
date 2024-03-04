@@ -11,7 +11,7 @@ func (p *Profile) SetupECS() (err error) {
 
 	// no standard cores: 12c / 24c / 96c / 104c / 192c ... : numCPU != numIRQ
 	if numCPU&(numCPU-1) != 0 {
-		return p.policies[policy.Isolate](
+		return p.policies[policy.Steering](
 			// option.WithCPUSelectPolicy(option.CPUSelectPolicyScatter), // default
 			// option.WithCPUSelectMask(option.CPUSelectMaskAll),         // default
 			option.WithFlowMode(option.FlowModeSplitMainNIC),
@@ -20,7 +20,7 @@ func (p *Profile) SetupECS() (err error) {
 
 	// large node: prefer to redirect softirqs to application cores
 	if numCPU > p.largeNode {
-		return p.policies[policy.Isolate](
+		return p.policies[policy.Steering](
 			// option.WithCPUSelectPolicy(option.CPUSelectPolicyScatter), // default
 			// option.WithCPUSelectMask(option.CPUSelectMaskAll),         // default
 			option.WithFlowMode(option.FlowModeSplitMainNIC),
@@ -28,7 +28,7 @@ func (p *Profile) SetupECS() (err error) {
 	}
 
 	// standard 2^n cores: 2c / 4c / 8c ... : numCPU == numIRQ
-	return p.policies[policy.Spread](
+	return p.policies[policy.Static](
 	// option.WithCPUSelectPolicy(option.CPUSelectPolicyScatter), // default
 	// option.WithCPUSelectMask(option.CPUSelectMaskAll),         // default
 	).Apply()

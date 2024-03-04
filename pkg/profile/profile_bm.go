@@ -6,7 +6,7 @@ import (
 )
 
 func (p *Profile) SetupBM() (err error) {
-	return p.policies[policy.Isolate](
+	return p.policies[policy.Steering](
 		// option.WithCPUSelectPolicy(option.CPUSelectPolicyScatter), // default
 		// option.WithCPUSelectMask(option.CPUSelectMaskAll),         // default
 		option.WithFlowMode(option.FlowModeFromOneOfNIC),

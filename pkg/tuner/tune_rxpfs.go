@@ -67,10 +67,10 @@ func (t *Tuner) EnableRPSRFSXPS(eths []*nic.NIC, cpucount, conncount int, opt *o
 	}
 
 	// group nics according to flow mode
-	var nicGroups [][]*nic.NIC
+	var nicGroups nic.NICGroup
 	switch opt.FlowMode {
 	case option.FlowModeAvgFromAllNIC:
-		nicGroups = [][]*nic.NIC{eths}
+		nicGroups = nic.NICGroup{eths}
 	case option.FlowModeFromOneOfNIC:
 		for _, eth := range eths {
 			nicGroups = append(nicGroups, []*nic.NIC{eth})
@@ -89,7 +89,7 @@ func (t *Tuner) EnableRPSRFSXPS(eths []*nic.NIC, cpucount, conncount int, opt *o
 	default:
 		return fmt.Errorf("unknown flow mode %d", opt.FlowMode)
 	}
-	klog.InfoS("get NIC groups", "groups", nicGroups)
+	klog.InfoS("get NIC groups", "groups", nicGroups.Names())
 
 	// apply rps_flow_cnt for each nic group
 	klog.InfoS("enable RPS RFS aRFS XPS")
@@ -110,11 +110,11 @@ func (t *Tuner) EnableRPSRFSXPS(eths []*nic.NIC, cpucount, conncount int, opt *o
 				}
 			}
 		}
-		klog.InfoS("get total queue count", "nicgroup", nicGroup, "queues", queuecount)
+		klog.InfoS("get total queue count", "nicgroup", nicGroup.Names(), "queues", queuecount)
 
 		conncountPerQueue := conncount / queuecount
 		ccpq := strconv.Itoa(conncountPerQueue)
-		klog.InfoS("get connection count per queue", "nicgroup", nicGroup, "conncount", conncount, "conncountPerQueue", conncountPerQueue)
+		klog.InfoS("get connection count per queue", "nicgroup", nicGroup.Names(), "conncount", conncount, "conncountPerQueue", conncountPerQueue)
 
 		for _, eth := range nicGroup {
 			if ch, _ := eth.GetQueueChannel(); ch != nil {

@@ -16,8 +16,10 @@ import (
 
 var nicQueueIRQFilter = map[string]*regexp.Regexp{
 	"i40e":       regexp.MustCompile(`i40e-eth[0-9]+-TxRx-[0-9]+`),
+	"mlx4_core":  regexp.MustCompile(`mlx4_comp[0-9]+@pci:.+`),
 	"mlx5_core":  regexp.MustCompile(`mlx5_comp[0-9]+@pci:.+`),
 	"virtio_net": regexp.MustCompile(`virtio[0-9]+-(in|out)put[.][0-9]+`),
+	"ena":        regexp.MustCompile(`eth[0-9]+-Tx-Rx-[0-9]+`),
 }
 
 func UpdateNICQueueIRQFilter(driver, regex string) {
@@ -41,6 +43,16 @@ func (nics NICList) Names() []string {
 	return names
 }
 
+type NICGroup []NICList
+
+func (ngs NICGroup) Names() [][]string {
+	names := make([][]string, len(ngs))
+	for i, ng := range ngs {
+		names[i] = ng.Names()
+	}
+	return names
+}
+
 func NewNIC(name string) *NIC {
 	n := &NIC{Name: name}
 	n.Device = n.getDevice()
@@ -49,7 +61,7 @@ func NewNIC(name string) *NIC {
 	return n
 }
 
-func List(regexpr string) (nics []*NIC, err error) {
+func List(regexpr string) (nics NICList, err error) {
 
 	var (
 		reg     *regexp.Regexp
