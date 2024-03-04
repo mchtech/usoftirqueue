@@ -40,45 +40,54 @@ func main() {
 	flag.Set("alsologtostderr", "true")
 
 	flag.BoolVar(&option.DryRun, "option.dry-run", false, "dry run")
-	flag.StringVar(&irqPolicy, "custom.policy", irqPolicy, `
-┌──────────┬───────────────────────────────────────────────────────────────────────┐
-│ static   │ set NIC hardirq affinity                                              │
-├──────────┼───────────────────────────────────────────────────────────────────────┤
-│ steering │ set NIC hardirq affinity and use RPS/RFS/aRFS/XPS to steering softirq │
-└──────────┴───────────────────────────────────────────────────────────────────────┘
+	flag.StringVar(&irqPolicy, "option.policy", irqPolicy, `
+┌──────────┬────────────────────────────────────────────────┐
+│ auto     │ selected by usoftirqueue                       │
+├──────────┼────────────────────────────────────────────────┤
+│ static   │ set NIC hardirq affinity                       │
+├──────────┼────────────────────────────────────────────────┤
+│ steering │ set NIC hardirq affinity                       │
+│          │ use RPS/RFS/aRFS/XPS to steering softirq       │
+└──────────┴────────────────────────────────────────────────┘
 `)
-	flag.StringVar(&cpuStrategy, "custom.policy.cpu.strategy", cpuStrategy, `
-┌────────────┬───────────────────────────────────────────┐
-│ scatter    │ scatter cores if remained NumIRQ < NumCPU │
-│            │ 0 1 2 3 4 5 6 7 0 2 4 6                   │
-│            │ 0 1 2 3 4 5 6 7 1 3 5 7                   │
-│            │ 0 1 2 3 4 5 6 7 2 6                       │
-│            │ ......                                    │
-├────────────┼───────────────────────────────────────────┤
-│ roundrobin │ select cores roundrobin                   │
-│            │ 0 1 2 3                                   │
-│            │ 4 5 6 7                                   │
-│            │ 0 1 2 3 4 5                               │
-│            │ 6 7 0 1 2 3                               │
-│            │ ......                                    │
-└────────────┴───────────────────────────────────────────┘
-`)
-	flag.StringVar(&cpuMask, "custom.policy.cpu.mask", cpuMask, `
+	flag.StringVar(&cpuStrategy, "option.policy.cpu.strategy", cpuStrategy, `
 ┌────────────┬──────────────────────────────────────────────┐
+│ auto       │ selected by usoftirqueue                     │
+├────────────┼──────────────────────────────────────────────┤
+│ scatter    │ scatter cores if remained NumIRQ < NumCPU    │
+│            │ 0 1 2 3 4 5 6 7 0 2 4 6                      │
+│            │ 0 1 2 3 4 5 6 7 1 3 5 7                      │
+│            │ 0 1 2 3 4 5 6 7 2 6                          │
+│            │ ......                                       │
+├────────────┼──────────────────────────────────────────────┤
+│ roundrobin │ select cores roundrobin                      │
+│            │ 0 1 2 3                                      │
+│            │ 4 5 6 7                                      │
+│            │ 0 1 2 3 4 5                                  │
+│            │ 6 7 0 1 2 3                                  │
+│            │ ......                                       │
+└────────────┴──────────────────────────────────────────────┘
+`)
+	flag.StringVar(&cpuMask, "option.policy.cpu.mask", cpuMask, `
+┌────────────┬──────────────────────────────────────────────┐
+│ auto       │ selected by usoftirqueue                     │
+├────────────┼──────────────────────────────────────────────┤
 │ all        │ use all cores                                │
 ├────────────┼──────────────────────────────────────────────┤
 │ local_numa │ use cores of same NUMA node as NIC installed │
 └────────────┴──────────────────────────────────────────────┘
 `)
-	flag.StringVar(&flowMode, "custom.policy.nic.flowmode", flowMode, `
-┌───────────────┬──────────────────────────────────────────┐
-│ one_of_all    │ RX/TX from one of all NICs               │
-├───────────────┼──────────────────────────────────────────┤
-│ avg_from_all  │ RX/TX from all NICs averagely            │
-├───────────────┼──────────────────────────────────────────┤
-│ cloud_k8s_eni │ RX/TX from eth0 for K8s HostNetwork      │
-│               │ RX/TX from eth1..ethn for K8s CNINetwork │
-└───────────────┴──────────────────────────────────────────┘
+	flag.StringVar(&flowMode, "option.policy.nic.flowmode", flowMode, `
+┌───────────────┬───────────────────────────────────────────┐
+│ auto          │ selected by usoftirqueue                  │
+├───────────────┼───────────────────────────────────────────┤
+│ one_of_all    │ RX/TX from one of all NICs                │
+├───────────────┼───────────────────────────────────────────┤
+│ avg_from_all  │ RX/TX from all NICs averagely             │
+├───────────────┼───────────────────────────────────────────┤
+│ cloud_k8s_eni │ RX/TX from eth0 for K8s HostNetwork       │
+│               │ RX/TX from eth1..ethn for K8s CNINetwork  │
+└───────────────┴───────────────────────────────────────────┘
 `)
 	flag.StringVar(&nicRegex, "option.nic-filter", nicRegex, "filter nic name by regexp")
 	flag.Var(&queueRegexes, "option.irq-filter", "filter nic rx/tx queue irq name by regexp (can be specified multiple times)\nformat: <driver>:<regexp>\n"+formatter.NewTableFromMap(nic.GetNICQueueIRQFilter(), []string{"driver", "regexp"}).String())
@@ -88,7 +97,7 @@ func main() {
 	flag.Parse()
 
 	if irqPolicy == "auto" && (cpuStrategy != "auto" || cpuMask != "auto" || flowMode != "auto") {
-		klog.Error("--custom.policy must be set together with --custom.policy.cpu.strategy --custom.policy.cpu.mask --custom.policy.nic.flowmode")
+		klog.Error("--option.policy must be set together with --option.policy.cpu.strategy --option.policy.cpu.mask --option.policy.nic.flowmode")
 		os.Exit(1)
 		return
 	}
