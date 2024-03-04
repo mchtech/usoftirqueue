@@ -47,10 +47,10 @@ func (t *Tuner) TuneIRQ(eth *nic.NIC, cpus *cpu.Topology, opt *option.Option) (e
 		srr = util.NewScatterRoundRobinIterator(cores)
 	})
 
-	switch opt.CPUSelectPolicy {
-	case option.CPUSelectPolicyRoundRobin:
+	switch opt.CPUSelectStrategy {
+	case option.CPUSelectStrategyRoundRobin:
 		desiredAffinity = rr.NextN(numIRQ)
-	case option.CPUSelectPolicyScatter:
+	case option.CPUSelectStrategyScatter:
 		for i := 0; i < numIRQ/numCore; i++ {
 			desiredAffinity = append(desiredAffinity, cores...)
 		}
@@ -63,7 +63,7 @@ func (t *Tuner) TuneIRQ(eth *nic.NIC, cpus *cpu.Topology, opt *option.Option) (e
 			}
 		}
 	default:
-		return errors.Errorf("unsupported CPU select policy %q", opt.CPUSelectPolicy)
+		return errors.Errorf("unsupported CPU select policy %q", opt.CPUSelectStrategy)
 	}
 
 	for i := 0; i < numIRQ; i++ {

@@ -2,13 +2,20 @@ package option
 
 var DryRun bool
 
-type CPUSelectPolicy int
+// CPUSelectStrategy
+type CPUSelectStrategy int
 
 const (
-	CPUSelectPolicyScatter    CPUSelectPolicy = iota // select cpus: scatter from cores with round offset (default)
-	CPUSelectPolicyRoundRobin                        // select cpus: continue from previous core
+	CPUSelectStrategyScatter    CPUSelectStrategy = iota // select cpus: scatter from cores with round offset (default)
+	CPUSelectStrategyRoundRobin                          // select cpus: continue from previous core
 )
 
+var StringToCPUSelectStrategy = map[string]CPUSelectStrategy{
+	"scatter":    CPUSelectStrategyScatter,
+	"roundrobin": CPUSelectStrategyRoundRobin,
+}
+
+// CPUSelectMask
 type CPUSelectMask int
 
 const (
@@ -16,16 +23,28 @@ const (
 	CPUSelectMaskLocalNUMA                      // select local numa cores
 )
 
+var StringToCPUSelectMask = map[string]CPUSelectMask{
+	"all":        CPUSelectMaskAll,
+	"local_numa": CPUSelectMaskLocalNUMA,
+}
+
+// FlowMode
 type FlowMode int
 
 const (
 	FlowModeFromOneOfNIC  FlowMode = iota // rx from one of all NICs
-	FlowModeSplitMainNIC                  // rx from main NIC and/or other NICs (k8s ecs/ebm: hostNetwork: eth0, CNI Network: eth1..ethx)
 	FlowModeAvgFromAllNIC                 // rx from all NICs avg (e.g. bond)
+	FlowModeCloudK8sENI                   // rx from main NIC and/or other NICs (k8s ecs/ebm: hostNetwork: eth0, CNI Network: eth1..ethx)
 )
 
+var StringToFlowMode = map[string]FlowMode{
+	"one_of_all":    FlowModeFromOneOfNIC,
+	"avg_from_all":  FlowModeAvgFromAllNIC,
+	"cloud_k8s_eni": FlowModeCloudK8sENI,
+}
+
 type Option struct {
-	CPUSelectPolicy   CPUSelectPolicy
+	CPUSelectStrategy CPUSelectStrategy
 	CPUSelectMask     CPUSelectMask
 	FlowMode          FlowMode // for RFS
 	ExpectConnections int      // for RFS
@@ -41,9 +60,9 @@ func ParseOptions(opts ...OptionFunc) *Option {
 	return opt
 }
 
-func WithCPUSelectPolicy(p CPUSelectPolicy) OptionFunc {
+func WithCPUSelectStrategy(p CPUSelectStrategy) OptionFunc {
 	return func(opt *Option) {
-		opt.CPUSelectPolicy = p
+		opt.CPUSelectStrategy = p
 	}
 }
 

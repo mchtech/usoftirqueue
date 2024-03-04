@@ -1,8 +1,6 @@
 package policy
 
-// var (
-// 	Policies []Policy
-// )
+type IRQPolicy string
 
 type Policy interface {
 	Name() string

@@ -9,7 +9,7 @@ import (
 	"k8s.io/klog/v2"
 )
 
-const Static = "static"
+const Static IRQPolicy = "static"
 
 var _ Policy = &StaticPolicy{}
 
@@ -23,7 +23,7 @@ type StaticPolicy struct {
 func NewStaticPolicy(cpu *cpu.Topology, nics []*nic.NIC, opts ...option.OptionFunc) *StaticPolicy {
 	return &StaticPolicy{
 		CommonPolicy: NewCommonPolicy(cpu, nics),
-		name:         Static,
+		name:         string(Static),
 		option:       option.ParseOptions(opts...),
 		tuner:        tuner.New(),
 	}

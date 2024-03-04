@@ -75,7 +75,7 @@ func (t *Tuner) EnableRPSRFSXPS(eths []*nic.NIC, cpucount, conncount int, opt *o
 		for _, eth := range eths {
 			nicGroups = append(nicGroups, []*nic.NIC{eth})
 		}
-	case option.FlowModeSplitMainNIC:
+	case option.FlowModeCloudK8sENI:
 		for i, eth := range eths {
 			if i == 0 {
 				nicGroups = append(nicGroups, []*nic.NIC{eth})

@@ -34,7 +34,7 @@ func (p *Profile) SetupEBM() (err error) {
 		return p.policies[policy.Steering](
 			// option.WithCPUSelectPolicy(option.CPUSelectPolicyScatter), // default
 			// option.WithCPUSelectMask(option.CPUSelectMaskAll),         // default
-			option.WithFlowMode(option.FlowModeSplitMainNIC),
+			option.WithFlowMode(option.FlowModeCloudK8sENI),
 		).Apply()
 	}
 
@@ -47,7 +47,7 @@ func (p *Profile) SetupEBM() (err error) {
 		return p.policies[policy.Steering](
 			// option.WithCPUSelectPolicy(option.CPUSelectPolicyScatter), // default
 			// option.WithCPUSelectMask(option.CPUSelectMaskAll),         // default
-			option.WithFlowMode(option.FlowModeSplitMainNIC),
+			option.WithFlowMode(option.FlowModeCloudK8sENI),
 		).Apply()
 	} else {
 		klog.InfoS("num nics ≤ 2",
@@ -58,7 +58,7 @@ func (p *Profile) SetupEBM() (err error) {
 		return p.policies[policy.Steering](
 			// option.WithCPUSelectPolicy(option.CPUSelectPolicyScatter), // default
 			option.WithCPUSelectMask(option.CPUSelectMaskLocalNUMA),
-			option.WithFlowMode(option.FlowModeSplitMainNIC),
+			option.WithFlowMode(option.FlowModeCloudK8sENI),
 		).Apply()
 	}
 }

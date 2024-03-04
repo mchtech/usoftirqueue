@@ -26,7 +26,7 @@ var (
 	}
 )
 
-const Steering = "steering"
+const Steering IRQPolicy = "steering"
 
 var _ Policy = &SteeringPolicy{}
 
@@ -40,7 +40,7 @@ type SteeringPolicy struct {
 func NewSteeringPolicy(cpu *cpu.Topology, nics []*nic.NIC, opts ...option.OptionFunc) *SteeringPolicy {
 	return &SteeringPolicy{
 		CommonPolicy: NewCommonPolicy(cpu, nics),
-		name:         Steering,
+		name:         string(Steering),
 		option:       option.ParseOptions(opts...),
 		tuner:        tuner.New(),
 	}

@@ -9,7 +9,7 @@ import (
 	"k8s.io/klog/v2"
 )
 
-const Common = "common"
+const Common IRQPolicy = "common"
 
 var _ Policy = &CommonPolicy{}
 
@@ -25,7 +25,7 @@ type CommonPolicy struct {
 
 func NewCommonPolicy(cpu *cpu.Topology, nics []*nic.NIC) *CommonPolicy {
 	return &CommonPolicy{
-		name: Common,
+		name: string(Common),
 		cpus: cpu,
 		nics: nics,
 		// option: option.ParseOptions(opts...),
