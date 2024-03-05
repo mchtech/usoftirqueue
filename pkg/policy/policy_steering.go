@@ -38,28 +38,28 @@ type SteeringPolicy struct {
 }
 
 func NewSteeringPolicy(cpu *cpu.Topology, nics []*nic.NIC, opts ...option.OptionFunc) *SteeringPolicy {
+
+	// update opts
+	o := option.ParseOptions(opts...)
+	if o.ExpectConnections == 0 {
+		numCPU := cpu.NumCPU()
+		c, ok := CoreToConnections[numCPU]
+		if !ok {
+			c = BaseConnectionsPerCore * numCPU
+		}
+		o.ExpectConnections = c
+	}
+
 	return &SteeringPolicy{
 		CommonPolicy: NewCommonPolicy(cpu, nics),
 		name:         string(Steering),
-		option:       option.ParseOptions(opts...),
+		option:       o,
 		tuner:        tuner.New(),
 	}
 }
 
 func (p *SteeringPolicy) Name() string {
 	return p.name
-}
-
-func (p *SteeringPolicy) ExpectConnections() int {
-	if p.option.ExpectConnections == 0 {
-		cpuCount := p.cpus.NumCPU()
-		c, ok := CoreToConnections[cpuCount]
-		if !ok {
-			c = BaseConnectionsPerCore * cpuCount
-		}
-		p.option.ExpectConnections = c
-	}
-	return p.option.ExpectConnections
 }
 
 func (p *SteeringPolicy) Apply() (err error) {
@@ -94,11 +94,10 @@ func (p *SteeringPolicy) apply() (err error) {
 	// enable RPS RFS aRFS XPS
 	if err = p.tuner.EnableRPSRFSXPS(
 		p.nics,
-		p.cpus.NumCPU(),
-		p.ExpectConnections(),
+		p.cpus,
 		p.option,
 	); err != nil {
-		klog.ErrorS(err, "failed to disable RPS RFS aRFS XPS", "nic", p.nics)
+		klog.ErrorS(err, "failed to enable RPS RFS aRFS XPS", "nic", p.nics)
 		return
 	}
 	return

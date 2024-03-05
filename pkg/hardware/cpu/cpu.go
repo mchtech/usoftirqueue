@@ -1,7 +1,9 @@
 package cpu
 
 import (
+	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/jaypipes/ghw"
 	"github.com/jaypipes/ghw/pkg/cpu"
@@ -72,4 +74,23 @@ func (c *Topology) CoreIDs(numaID int, excludeHyperThread bool) (r []int) {
 		}
 	}
 	return
+}
+
+func (c *Topology) Bitmap() (mask string) {
+	return cpubitmap(c.NumCPU())
+}
+
+func cpubitmap(cnt int) (mask string) {
+	q := cnt / 32
+	for i := 0; i < q; i++ {
+		mask = "ffffffff," + mask
+	}
+	if r := cnt % 32; r > 0 {
+		v := 0
+		for i := 0; i < r; i++ {
+			v |= (1 << i)
+		}
+		mask = fmt.Sprintf("%x", v) + "," + mask
+	}
+	return strings.TrimRight(mask, ",")
 }
