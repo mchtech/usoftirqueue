@@ -87,7 +87,7 @@ func (t *Tuner) EnableRPSRFSXPS(eths []*nic.NIC, cpucount, conncount int, opt *o
 			}
 		}
 	default:
-		return fmt.Errorf("unknown traffic source %s", opt.TrafficSource)
+		return fmt.Errorf("unknown traffic source %v", opt.TrafficSource)
 	}
 	klog.InfoS("get NIC groups", "groups", nicGroups.Names())
 

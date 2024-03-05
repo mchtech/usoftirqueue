@@ -35,7 +35,7 @@ func (t *Tuner) TuneIRQ(eth *nic.NIC, cpus *cpu.Topology, opt *option.Option) (e
 	case option.CPUSelectMaskAll:
 		numa = -1
 	default:
-		return fmt.Errorf("unknown CPUSelectMask: %s", opt.CPUSelectMask)
+		return fmt.Errorf("unknown CPUSelectMask: %v", opt.CPUSelectMask)
 	}
 	if numa >= 0 {
 		numCore = cpus.NumLocalCPU(numa)

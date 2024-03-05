@@ -110,13 +110,13 @@ func main() {
 		userPolicy = policy.IRQPolicy(irqPolicy)
 	}
 	if cpuStrategy != "auto" {
-		userPolicyOpts = append(userPolicyOpts, option.WithCPUSelectStrategy(option.CPUSelectStrategy(cpuStrategy)))
+		userPolicyOpts = append(userPolicyOpts, option.WithCPUSelectStrategy(option.StringToCPUSelectStrategy[cpuStrategy]))
 	}
 	if cpuMask != "auto" {
-		userPolicyOpts = append(userPolicyOpts, option.WithCPUSelectMask(option.CPUSelectMask(cpuMask)))
+		userPolicyOpts = append(userPolicyOpts, option.WithCPUSelectMask(option.StringToCPUSelectMask[cpuMask]))
 	}
 	if trafficSource != "auto" {
-		userPolicyOpts = append(userPolicyOpts, option.WithTrafficSource(option.TrafficSource(trafficSource)))
+		userPolicyOpts = append(userPolicyOpts, option.WithTrafficSource(option.StringToTrafficSource[trafficSource]))
 	}
 
 	// reg queue irq filter

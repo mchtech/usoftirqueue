@@ -6,29 +6,45 @@ var (
 )
 
 // CPUSelectStrategy
-type CPUSelectStrategy string
+type CPUSelectStrategy int
 
 const (
-	CPUSelectStrategyScatter    CPUSelectStrategy = "scatter"    // select cpus: scatter from cores with round offset (default)
-	CPUSelectStrategyRoundRobin CPUSelectStrategy = "roundrobin" // select cpus: continue from previous core
+	CPUSelectStrategyScatter    CPUSelectStrategy = iota // select cpus: scatter from cores with round offset (default)
+	CPUSelectStrategyRoundRobin                          // select cpus: continue from previous core
 )
+
+var StringToCPUSelectStrategy = map[string]CPUSelectStrategy{
+	"scatter":    CPUSelectStrategyScatter,
+	"roundrobin": CPUSelectStrategyRoundRobin,
+}
 
 // CPUSelectMask
-type CPUSelectMask string
+type CPUSelectMask int
 
 const (
-	CPUSelectMaskAll       CPUSelectMask = "all"   // select all cores
-	CPUSelectMaskLocalNUMA CPUSelectMask = "local" // select local numa cores
+	CPUSelectMaskAll       CPUSelectMask = iota // select all cores
+	CPUSelectMaskLocalNUMA                      // select local numa cores
 )
+
+var StringToCPUSelectMask = map[string]CPUSelectMask{
+	"all":   CPUSelectMaskAll,
+	"local": CPUSelectMaskLocalNUMA,
+}
 
 // TrafficSource
-type TrafficSource string
+type TrafficSource int
 
 const (
-	TrafficSourceFromOneOfNIC  TrafficSource = "one_of_all"    // rx from one of all NICs
-	TrafficSourceAvgFromAllNIC TrafficSource = "avg_from_all"  // rx from all NICs avg (e.g. bond)
-	TrafficSourceCloudK8sENI   TrafficSource = "cloud_k8s_eni" // rx from main NIC and/or other NICs (k8s ecs/ebm: hostNetwork: eth0, CNI Network: eth1..ethx)
+	TrafficSourceFromOneOfNIC  TrafficSource = iota // rx from one of all NICs
+	TrafficSourceAvgFromAllNIC                      // rx from all NICs avg (e.g. bond)
+	TrafficSourceCloudK8sENI                        // rx from main NIC and/or other NICs (k8s ecs/ebm: hostNetwork: eth0, CNI Network: eth1..ethx)
 )
+
+var StringToTrafficSource = map[string]TrafficSource{
+	"one_of_all":    TrafficSourceFromOneOfNIC,
+	"avg_from_all":  TrafficSourceAvgFromAllNIC,
+	"cloud_k8s_eni": TrafficSourceCloudK8sENI,
+}
 
 type Option struct {
 	CPUSelectStrategy CPUSelectStrategy
