@@ -34,7 +34,7 @@ func (p *Profile) SetupEBM() (err error) {
 		return p.policies[policy.Steering](
 			// option.WithCPUSelectStrategy(option.CPUSelectStrategyScatter), // default
 			// option.WithCPUSelectMask(option.CPUSelectMaskAll),         // default
-			option.WithFlowMode(option.FlowModeCloudK8sENI),
+			option.WithTrafficSource(option.TrafficSourceCloudK8sENI),
 		).Apply()
 	}
 
@@ -42,23 +42,23 @@ func (p *Profile) SetupEBM() (err error) {
 		klog.InfoS("num nics > 2",
 			"CPUSelectStrategy", "CPUSelectStrategyScatter",
 			"CPUSelectMask", "CPUSelectMaskAll",
-			"FlowMode", "FlowModeFromOneOfNIC --> FlowModeCloudK8sENI",
+			"TrafficSource", "TrafficSourceFromOneOfNIC --> TrafficSourceCloudK8sENI",
 		)
 		return p.policies[policy.Steering](
 			// option.WithCPUSelectStrategy(option.CPUSelectStrategyScatter), // default
 			// option.WithCPUSelectMask(option.CPUSelectMaskAll),         // default
-			option.WithFlowMode(option.FlowModeCloudK8sENI),
+			option.WithTrafficSource(option.TrafficSourceCloudK8sENI),
 		).Apply()
 	} else {
 		klog.InfoS("num nics ≤ 2",
 			"CPUSelectStrategy", "CPUSelectStrategyScatter",
 			"CPUSelectMask", "CPUSelectMaskLocalNUMA",
-			"FlowMode", "FlowModeFromOneOfNIC --> FlowModeCloudK8sENI",
+			"TrafficSource", "TrafficSourceFromOneOfNIC --> TrafficSourceCloudK8sENI",
 		)
 		return p.policies[policy.Steering](
 			// option.WithCPUSelectStrategy(option.CPUSelectStrategyScatter), // default
 			option.WithCPUSelectMask(option.CPUSelectMaskLocalNUMA),
-			option.WithFlowMode(option.FlowModeCloudK8sENI),
+			option.WithTrafficSource(option.TrafficSourceCloudK8sENI),
 		).Apply()
 	}
 }

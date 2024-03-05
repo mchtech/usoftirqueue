@@ -19,7 +19,7 @@ var (
 	irqPolicy         = "auto"
 	cpuStrategy       = "auto"
 	cpuMask           = "auto"
-	flowMode          = "auto"
+	trafficSource     = "auto"
 	nicRegex          = `^eth[\d]+`
 	queueIRQRegexes   util.StringsFlags
 	largeNodeThresh   = 16
@@ -72,15 +72,15 @@ func main() {
 └────────────┴──────────────────────────────────────────────┘
 `)
 	flag.StringVar(&cpuMask, "option.policy.cpu.mask", cpuMask, `
-┌────────────┬──────────────────────────────────────────────┐
-│ auto       │ selected by usoftirqueue                     │
-├────────────┼──────────────────────────────────────────────┤
-│ all        │ use all cores                                │
-├────────────┼──────────────────────────────────────────────┤
-│ local_numa │ use cores of same NUMA node as NIC installed │
-└────────────┴──────────────────────────────────────────────┘
+┌───────┬──────────────────────────────────────────────┐
+│ auto  │ selected by usoftirqueue                     │
+├───────┼──────────────────────────────────────────────┤
+│ all   │ use all cores                                │
+├───────┼──────────────────────────────────────────────┤
+│ local │ use cores of same NUMA node as NIC installed │
+└───────┴──────────────────────────────────────────────┘
 `)
-	flag.StringVar(&flowMode, "option.policy.nic.flowmode", flowMode, `
+	flag.StringVar(&trafficSource, "option.policy.nic.trafficsource", trafficSource, `
 ┌───────────────┬───────────────────────────────────────────┐
 │ auto          │ selected by usoftirqueue                  │
 ├───────────────┼───────────────────────────────────────────┤
@@ -101,8 +101,8 @@ func main() {
 	klog.InfoS("starting", "at", time.Now().Format(time.RFC3339Nano))
 
 	// user-override options
-	if irqPolicy == "auto" && (cpuStrategy != "auto" || cpuMask != "auto" || flowMode != "auto") {
-		klog.Error("--option.policy must be set together with --option.policy.cpu.strategy --option.policy.cpu.mask --option.policy.nic.flowmode")
+	if irqPolicy == "auto" && (cpuStrategy != "auto" || cpuMask != "auto" || trafficSource != "auto") {
+		klog.Error("--option.policy must be set together with --option.policy.cpu.strategy --option.policy.cpu.mask --option.policy.nic.trafficsource")
 		os.Exit(1)
 		return
 	}
@@ -110,13 +110,13 @@ func main() {
 		userPolicy = policy.IRQPolicy(irqPolicy)
 	}
 	if cpuStrategy != "auto" {
-		userPolicyOpts = append(userPolicyOpts, option.WithCPUSelectStrategy(option.StringToCPUSelectStrategy[cpuStrategy]))
+		userPolicyOpts = append(userPolicyOpts, option.WithCPUSelectStrategy(option.CPUSelectStrategy(cpuStrategy)))
 	}
 	if cpuMask != "auto" {
-		userPolicyOpts = append(userPolicyOpts, option.WithCPUSelectMask(option.StringToCPUSelectMask[cpuMask]))
+		userPolicyOpts = append(userPolicyOpts, option.WithCPUSelectMask(option.CPUSelectMask(cpuMask)))
 	}
-	if flowMode != "auto" {
-		userPolicyOpts = append(userPolicyOpts, option.WithFlowMode(option.StringToFlowMode[flowMode]))
+	if trafficSource != "auto" {
+		userPolicyOpts = append(userPolicyOpts, option.WithTrafficSource(option.TrafficSource(trafficSource)))
 	}
 
 	// reg queue irq filter

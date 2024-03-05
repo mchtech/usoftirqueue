@@ -14,7 +14,7 @@ func (p *Profile) SetupECS() (err error) {
 		return p.policies[policy.Steering](
 			// option.WithCPUSelectStrategy(option.CPUSelectStrategyScatter), // default
 			// option.WithCPUSelectMask(option.CPUSelectMaskAll),         // default
-			option.WithFlowMode(option.FlowModeCloudK8sENI),
+			option.WithTrafficSource(option.TrafficSourceCloudK8sENI),
 		).Apply()
 	}
 
@@ -23,7 +23,7 @@ func (p *Profile) SetupECS() (err error) {
 		return p.policies[policy.Steering](
 			// option.WithCPUSelectStrategy(option.CPUSelectStrategyScatter), // default
 			// option.WithCPUSelectMask(option.CPUSelectMaskAll),         // default
-			option.WithFlowMode(option.FlowModeCloudK8sENI),
+			option.WithTrafficSource(option.TrafficSourceCloudK8sENI),
 		).Apply()
 	}
 

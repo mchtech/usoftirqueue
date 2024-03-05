@@ -41,12 +41,12 @@ func New(nicRegex string, largeNodeThresh, expectConnections int, userPolicy pol
 	}
 	klog.InfoS("board info", "chassis", bi.ChassisVendor, "product", bi.ProductName, "bios", bi.BIOSVendor)
 
-	// get CPU info
+	// get CPU topology
 	if cpus, err = cpu.List(); err != nil {
-		klog.ErrorS(err, "failed to get CPU info")
+		klog.ErrorS(err, "failed to get CPU topology")
 		return nil, err
 	}
-	klog.InfoS("current CPU", "numa", cpus.NumNUMA(), "total", cpus.NumCPU(), "local", cpus.NumLocalCPU(0))
+	klog.InfoS("CPU topology", "numa", cpus.NumNUMA(), "total", cpus.NumCPU(), "local", cpus.NumLocalCPU(0))
 
 	// get NICs
 	if nics, err = nic.List(nicRegex); err != nil {

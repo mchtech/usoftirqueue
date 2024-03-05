@@ -1,53 +1,40 @@
 package option
 
-var DryRun bool
+// global options
+var (
+	DryRun bool
+)
 
 // CPUSelectStrategy
-type CPUSelectStrategy int
+type CPUSelectStrategy string
 
 const (
-	CPUSelectStrategyScatter    CPUSelectStrategy = iota // select cpus: scatter from cores with round offset (default)
-	CPUSelectStrategyRoundRobin                          // select cpus: continue from previous core
+	CPUSelectStrategyScatter    CPUSelectStrategy = "scatter"    // select cpus: scatter from cores with round offset (default)
+	CPUSelectStrategyRoundRobin CPUSelectStrategy = "roundrobin" // select cpus: continue from previous core
 )
-
-var StringToCPUSelectStrategy = map[string]CPUSelectStrategy{
-	"scatter":    CPUSelectStrategyScatter,
-	"roundrobin": CPUSelectStrategyRoundRobin,
-}
 
 // CPUSelectMask
-type CPUSelectMask int
+type CPUSelectMask string
 
 const (
-	CPUSelectMaskAll       CPUSelectMask = iota // select all cores
-	CPUSelectMaskLocalNUMA                      // select local numa cores
+	CPUSelectMaskAll       CPUSelectMask = "all"   // select all cores
+	CPUSelectMaskLocalNUMA CPUSelectMask = "local" // select local numa cores
 )
 
-var StringToCPUSelectMask = map[string]CPUSelectMask{
-	"all":        CPUSelectMaskAll,
-	"local_numa": CPUSelectMaskLocalNUMA,
-}
-
-// FlowMode
-type FlowMode int
+// TrafficSource
+type TrafficSource string
 
 const (
-	FlowModeFromOneOfNIC  FlowMode = iota // rx from one of all NICs
-	FlowModeAvgFromAllNIC                 // rx from all NICs avg (e.g. bond)
-	FlowModeCloudK8sENI                   // rx from main NIC and/or other NICs (k8s ecs/ebm: hostNetwork: eth0, CNI Network: eth1..ethx)
+	TrafficSourceFromOneOfNIC  TrafficSource = "one_of_all"    // rx from one of all NICs
+	TrafficSourceAvgFromAllNIC TrafficSource = "avg_from_all"  // rx from all NICs avg (e.g. bond)
+	TrafficSourceCloudK8sENI   TrafficSource = "cloud_k8s_eni" // rx from main NIC and/or other NICs (k8s ecs/ebm: hostNetwork: eth0, CNI Network: eth1..ethx)
 )
-
-var StringToFlowMode = map[string]FlowMode{
-	"one_of_all":    FlowModeFromOneOfNIC,
-	"avg_from_all":  FlowModeAvgFromAllNIC,
-	"cloud_k8s_eni": FlowModeCloudK8sENI,
-}
 
 type Option struct {
 	CPUSelectStrategy CPUSelectStrategy
 	CPUSelectMask     CPUSelectMask
-	FlowMode          FlowMode // for RFS
-	ExpectConnections int      // for RFS
+	TrafficSource     TrafficSource // for RFS
+	ExpectConnections int           // for RFS
 }
 
 type OptionFunc func(*Option)
@@ -72,9 +59,9 @@ func WithCPUSelectMask(m CPUSelectMask) OptionFunc {
 	}
 }
 
-func WithFlowMode(m FlowMode) OptionFunc {
+func WithTrafficSource(m TrafficSource) OptionFunc {
 	return func(opt *Option) {
-		opt.FlowMode = m
+		opt.TrafficSource = m
 	}
 }
 

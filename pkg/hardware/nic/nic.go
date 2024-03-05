@@ -119,8 +119,6 @@ func (n *NIC) getDevice() string {
 	if strings.Contains(dev, "virtio") {
 		dev = filepath.Dir(dev)
 	}
-
-	// n.Device = s
 	klog.InfoS("get device", "nic", n.Name, "device", dev)
 	return dev
 }
@@ -129,8 +127,6 @@ func (n *NIC) getDriver() string {
 	drvPath := fmt.Sprintf("/sys/class/net/%s/device/driver", n.Name)
 	s, _ := filepath.EvalSymlinks(drvPath)
 	drv := filepath.Base(s)
-
-	// n.Driver = drv
 	klog.InfoS("get driver", "nic", n.Name, "driver", drv)
 	return drv
 }
@@ -167,8 +163,6 @@ func (n *NIC) getIRQs() (irqs irq.IRQList) {
 			irqs = append(irqs, irq)
 		}
 	}
-
-	// n.IRQs = irqs
 	klog.InfoS("filter TX/RX irqs", "nic", n.Name, "irqs", formatter.NewYAML(irqs))
 	return
 }

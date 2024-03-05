@@ -68,14 +68,14 @@ func (t *Tuner) EnableRPSRFSXPS(eths []*nic.NIC, cpucount, conncount int, opt *o
 
 	// group nics according to flow mode
 	var nicGroups nic.NICGroup
-	switch opt.FlowMode {
-	case option.FlowModeAvgFromAllNIC:
+	switch opt.TrafficSource {
+	case option.TrafficSourceAvgFromAllNIC:
 		nicGroups = nic.NICGroup{eths}
-	case option.FlowModeFromOneOfNIC:
+	case option.TrafficSourceFromOneOfNIC:
 		for _, eth := range eths {
 			nicGroups = append(nicGroups, []*nic.NIC{eth})
 		}
-	case option.FlowModeCloudK8sENI:
+	case option.TrafficSourceCloudK8sENI:
 		for i, eth := range eths {
 			if i == 0 {
 				nicGroups = append(nicGroups, []*nic.NIC{eth})
@@ -87,7 +87,7 @@ func (t *Tuner) EnableRPSRFSXPS(eths []*nic.NIC, cpucount, conncount int, opt *o
 			}
 		}
 	default:
-		return fmt.Errorf("unknown flow mode %d", opt.FlowMode)
+		return fmt.Errorf("unknown traffic source %s", opt.TrafficSource)
 	}
 	klog.InfoS("get NIC groups", "groups", nicGroups.Names())
 

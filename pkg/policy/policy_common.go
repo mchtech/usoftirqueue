@@ -47,13 +47,13 @@ func (p *CommonPolicy) Apply() (err error) {
 			klog.ErrorS(err, "failed to tune NIC queue channel", "nic", eth.Name)
 			break
 		}
-		klog.InfoS("finish tune NIC queue channel", "nic", eth.Name)
+		klog.InfoS("finish tuning NIC queue channel", "nic", eth.Name)
 		// tune NIC ring buffer to max
 		if err = p.tuner.TuneNICRingBufferMax(eth); err != nil {
 			klog.ErrorS(err, "failed to tune NIC ring buffer", "nic", eth.Name)
 			break
 		}
-		klog.InfoS("finish tune NIC ring buffer", "nic", eth.Name)
+		klog.InfoS("finish tuning NIC ring buffer", "nic", eth.Name)
 	}
 	return
 }
