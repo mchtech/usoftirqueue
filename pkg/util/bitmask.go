@@ -5,34 +5,50 @@ import (
 	"strings"
 )
 
-func BitMask(total int, idxs ...int) (mask string) {
+func BitMask(removeLeadingZero bool, total int, idxs ...int) (mask string) {
 
-	sz := total / 32
-	if total%32 > 0 {
+	sz := total / 4
+	if total%4 > 0 {
 		sz++
 	}
-	bms := make([]uint32, sz)
+	bms := make([]uint8, sz)
 
 	for _, idx := range idxs {
-		n, r := idx/32, idx%32
+		n, r := idx/4, idx%4
 		bms[n] |= 1 << r
 	}
 
-	// to string
+	// remove leading zero
+	if removeLeadingZero {
+		pos := sz - 1
+		for i := sz - 1; i >= 0; i-- {
+			if bms[i] != 0 {
+				pos = i
+				break
+			}
+			if i == 0 {
+				pos = 0
+				break
+			}
+		}
+		bms = bms[:pos+1]
+		sz = len(bms)
+	}
+
+	// convert to hex string
 	var masks []string
-	cont := true
-	o := 0
-	for i := sz - 1; i >= 0; i-- {
-		if sz > 1 && i != 0 && cont && bms[i] == 0 {
-			continue
+	var s string
+	for i := 0; i < sz; i++ {
+		s = fmt.Sprintf("%x", bms[i]) + s
+		if (i+1)%8 == 0 || i == sz-1 {
+			masks = append(masks, s)
+			s = ""
 		}
-		cont = false
-		if o == 0 {
-			masks = append(masks, fmt.Sprintf("%x", bms[i]))
-		} else {
-			masks = append(masks, fmt.Sprintf("%08x", bms[i]))
-		}
-		o++
+	}
+
+	// reverse masks
+	for i, j := 0, len(masks)-1; i < j; i, j = i+1, j-1 {
+		masks[i], masks[j] = masks[j], masks[i]
 	}
 	return strings.Join(masks, ",")
 }
