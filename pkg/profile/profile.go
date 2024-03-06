@@ -31,7 +31,7 @@ func New(nicRegex string, largeNodeThresh, expectConnections int, userPolicy pol
 	var (
 		bi   *board.BoardInfo
 		cpus *cpu.Topology
-		nics []*nic.NIC
+		nics nic.NICList
 	)
 
 	// get NICs
@@ -39,14 +39,14 @@ func New(nicRegex string, largeNodeThresh, expectConnections int, userPolicy pol
 		klog.ErrorS(err, "failed to get NICs", "regexp", nicRegex)
 		return nil, err
 	}
-	klog.InfoS("target NICs", "nics", nic.NICList(nics).Names(), "filter", nicRegex)
+	klog.InfoS("target NICs", "filter", nicRegex, "nics", nics.Names(), "irqs", nics.IRQs())
 
 	// get CPU topology
 	if cpus, err = cpu.List(); err != nil {
 		klog.ErrorS(err, "failed to get CPU topology")
 		return nil, err
 	}
-	klog.InfoS("CPU topology", "numa", cpus.NumNUMA(), "total", cpus.NumCPU(), "local", cpus.NumLocalCPU(0))
+	klog.InfoS("CPU topology", "numa", cpus.NumNUMA(), "total", cpus.NumCPU(), "local", cpus.NumLocalCPU(0), "ht", cpus.NumHyperThread(0), "cores", cpus.CoreIDs(-1, false))
 
 	// board info
 	if bi, err = board.Collect(); err != nil {

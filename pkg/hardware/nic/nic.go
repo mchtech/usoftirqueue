@@ -44,8 +44,8 @@ func GetNICQueueIRQFilter() map[string]*regexp.Regexp {
 type NIC struct {
 	Name   string      // e.g. eth0
 	Driver string      // e.g. mlx5_core
-	Device string      //
-	IRQs   irq.IRQList //
+	Device string      // PCI bus
+	IRQs   irq.IRQList // activated IRQs
 }
 
 type NICList []*NIC
@@ -56,6 +56,15 @@ func (nics NICList) Names() []string {
 		names[i] = n.Name
 	}
 	return names
+}
+
+// irqses
+func (nics NICList) IRQs() [][]int {
+	irqs := make([][]int, len(nics))
+	for i, n := range nics {
+		irqs[i] = n.IRQs.Numbers()
+	}
+	return irqs
 }
 
 type NICGroup []NICList
@@ -79,9 +88,8 @@ func NewNIC(name string) *NIC {
 func List(regexpr string) (nics NICList, err error) {
 
 	var (
-		reg     *regexp.Regexp
-		ifaces  []net.Interface
-		phyNICs []net.Interface
+		reg    *regexp.Regexp
+		ifaces []net.Interface
 	)
 
 	if reg, err = regexp.Compile(regexpr); err != nil {
@@ -92,20 +100,15 @@ func List(regexpr string) (nics NICList, err error) {
 		return
 	}
 
-	// filter virtual NIC
 	for _, iface := range ifaces {
+		// filter out virtual NIC
 		dev, _ := filepath.EvalSymlinks(fmt.Sprintf("/sys/class/net/%s", iface.Name))
 		if strings.Contains(dev, "/virtual/net/") {
-			klog.InfoS("ignore software NIC", "nic", iface.Name)
+			klog.InfoS("ignore software NIC", "nic", iface.Name, "mac", iface.HardwareAddr, "flag", iface.Flags)
 			continue
 		}
-		klog.InfoS("found hardware NIC", "nic", iface.Name)
-		phyNICs = append(phyNICs, iface)
-	}
-	klog.InfoS("get all physical NICs", "nics", formatter.NewYAML(phyNICs))
-
-	// filter NICs by regexpr
-	for _, iface := range phyNICs {
+		klog.InfoS("found hardware NIC", "nic", iface.Name, "mac", iface.HardwareAddr, "flag", iface.Flags)
+		// filter by regexpr
 		if reg.MatchString(iface.Name) {
 			nics = append(nics, NewNIC(iface.Name))
 		}
@@ -156,7 +159,7 @@ func (n *NIC) getIRQs() (irqs irq.IRQList) {
 			klog.ErrorS(err, "failed to get irq info", "nic", n.Name, "irq", irqNum)
 			continue
 		}
-		klog.InfoS("get irq info", "nic", n.Name, "irq", irq)
+		klog.InfoS("get irq info", "nic", n.Name, "irq", formatter.NewYAML(irq))
 		if filter != nil {
 			for _, name := range irq.Names {
 				if filter.MatchString(name) {
@@ -168,7 +171,7 @@ func (n *NIC) getIRQs() (irqs irq.IRQList) {
 			irqs = append(irqs, irq)
 		}
 	}
-	klog.InfoS("filter TX/RX irqs", "nic", n.Name, "irqs", formatter.NewYAML(irqs))
+	klog.InfoS("filter TX/RX irqs", "nic", n.Name, "irqs", irqs.Numbers())
 	return
 }
 

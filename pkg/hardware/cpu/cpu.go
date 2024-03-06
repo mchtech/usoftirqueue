@@ -38,7 +38,7 @@ func getCPUInfo() (cpus *cpu.Info, err error) {
 			})
 		}
 	}
-	klog.InfoS("get cpus", "cpus", cpus.YAMLString())
+	klog.InfoS("get cpus", "topology", cpus.YAMLString())
 	return
 }
 
@@ -46,15 +46,16 @@ func (c *Topology) NumCPU() int {
 	return int(c.TotalThreads)
 }
 
-func (c *Topology) NumLocalCPU(numaID int) int {
-	if numaID < 0 {
-		return c.NumCPU()
-	}
+func (c *Topology) NumLocalCPU(numaID uint) int {
 	return int(c.Processors[numaID].NumThreads)
 }
 
 func (c *Topology) NumNUMA() int {
 	return len(c.Processors)
+}
+
+func (c *Topology) NumHyperThread(numaID uint) int {
+	return int(c.Processors[numaID].Cores[0].NumThreads)
 }
 
 // CoreIDs returns the core IDs of the given NUMA node.
