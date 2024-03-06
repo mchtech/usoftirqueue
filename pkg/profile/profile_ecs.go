@@ -13,7 +13,7 @@ func (p *Profile) SetupECS() (err error) {
 	if numCPU&(numCPU-1) != 0 {
 		return p.policies[policy.Steering](
 			// option.WithCPUSelectStrategy(option.CPUSelectStrategyScatter), // default
-			// option.WithCPUSelectMask(option.CPUSelectMaskAll),         // default
+			// option.WithCPUSelectMask(option.CPUSelectMaskAll),             // default
 			option.WithTrafficSource(option.TrafficSourceCloudK8sENI),
 		).Apply()
 	}
@@ -22,7 +22,7 @@ func (p *Profile) SetupECS() (err error) {
 	if numCPU > p.largeNode {
 		return p.policies[policy.Steering](
 			// option.WithCPUSelectStrategy(option.CPUSelectStrategyScatter), // default
-			// option.WithCPUSelectMask(option.CPUSelectMaskAll),         // default
+			// option.WithCPUSelectMask(option.CPUSelectMaskAll),             // default
 			option.WithTrafficSource(option.TrafficSourceCloudK8sENI),
 		).Apply()
 	}
@@ -30,6 +30,6 @@ func (p *Profile) SetupECS() (err error) {
 	// standard 2^n cores: 2c / 4c / 8c ... : numCPU == numIRQ
 	return p.policies[policy.Static](
 	// option.WithCPUSelectStrategy(option.CPUSelectStrategyScatter), // default
-	// option.WithCPUSelectMask(option.CPUSelectMaskAll),         // default
+	// option.WithCPUSelectMask(option.CPUSelectMaskAll),             // default
 	).Apply()
 }

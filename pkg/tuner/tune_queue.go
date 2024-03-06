@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"usoftirqueue/pkg/hardware/nic"
 	"usoftirqueue/pkg/option"
-	"usoftirqueue/pkg/util/formatter"
 
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
@@ -12,49 +11,41 @@ import (
 
 func (t *Tuner) TuneNICQueueChannelMax(eth *nic.NIC, totalCPUCount uint32) error {
 
-	// get NIC queue
-	ech, err := eth.GetQueueChannel()
-	if err != nil {
-		return errors.Wrap(err, "failed to get NIC queue channel")
-	}
-	klog.InfoS("current NIC queue channel", "nic", eth.Name, "queue", ech)
+	q := eth.Queue
 
 	// calculate desired queue channel
-	desiredCombined := ech.MaxCombined
+	desiredCombined := q.MaxCombined
 	if desiredCombined > totalCPUCount {
 		desiredCombined = totalCPUCount
 	}
 
-	desiredRX := ech.MaxRx
+	desiredRX := q.MaxRx
 	if desiredRX > totalCPUCount {
 		desiredRX = totalCPUCount
 	}
 
-	desiredTX := ech.MaxTx
+	desiredTX := q.MaxTx
 	if desiredTX > totalCPUCount {
 		desiredTX = totalCPUCount
 	}
 
 	klog.InfoS("tune NIC queue channel", "nic", eth.Name,
-		"Combined", fmt.Sprintf("%d -> %d", ech.CombinedCount, desiredCombined),
-		"Rx", fmt.Sprintf("%d -> %d", ech.RxCount, desiredRX),
-		"Tx", fmt.Sprintf("%d -> %d", ech.TxCount, desiredTX),
+		"Combined", fmt.Sprintf("%d -> %d", q.CombinedCount, desiredCombined),
+		"Rx", fmt.Sprintf("%d -> %d", q.RxCount, desiredRX),
+		"Tx", fmt.Sprintf("%d -> %d", q.TxCount, desiredTX),
 	)
 
 	// tune queue channel
-	if ech.CombinedCount != desiredCombined || ech.RxCount != desiredRX || ech.TxCount != desiredTX {
+	if q.CombinedCount != desiredCombined || q.RxCount != desiredRX || q.TxCount != desiredTX {
 		if !option.DryRun {
-			ech.CombinedCount = desiredCombined
-			ech.RxCount = desiredRX
-			ech.TxCount = desiredTX
-			curr, err := eth.SetQueueChannel(*ech)
+			q.CombinedCount = desiredCombined
+			q.RxCount = desiredRX
+			q.TxCount = desiredTX
+			curr, err := eth.SetQueueChannel(*q)
 			if err != nil {
 				return errors.Wrap(err, "failed to set NIC queue channel")
 			}
 			klog.InfoS("finish tuning NIC queue channel", "nic", eth.Name, "queue", curr)
-			// refresh IRQs
-			old, new := eth.UpdateIRQs()
-			klog.InfoS("finish updating NIC IRQs", "nic", eth.Name, "old", formatter.NewYAML(old), "new", formatter.NewYAML(new))
 		} else {
 			klog.InfoS("dryrun mode: skip tuning NIC queue channel", "nic", eth.Name)
 		}

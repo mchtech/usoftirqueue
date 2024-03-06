@@ -46,6 +46,8 @@ type NIC struct {
 	Driver string      // e.g. mlx5_core
 	Device string      // PCI bus
 	IRQs   irq.IRQList // activated IRQs
+	Queue  *ethtool.Channels
+	Ring   *ethtool.Ring
 }
 
 type NICList []*NIC
@@ -77,12 +79,19 @@ func (ngs NICGroup) Names() [][]string {
 	return names
 }
 
-func NewNIC(name string) *NIC {
+func NewNICInfo(name string) (*NIC, error) {
+	var err error
 	n := &NIC{Name: name}
 	n.Device = n.getDevice()
 	n.Driver = n.getDriver()
 	n.IRQs = n.getIRQs()
-	return n
+	if n.Queue, err = n.getQueueChannel(true); err != nil {
+		return nil, err
+	}
+	if n.Ring, err = n.getRingBuffer(true); err != nil {
+		return nil, err
+	}
+	return n, nil
 }
 
 func List(regexpr string) (nics NICList, err error) {
@@ -90,6 +99,7 @@ func List(regexpr string) (nics NICList, err error) {
 	var (
 		reg    *regexp.Regexp
 		ifaces []net.Interface
+		nic    *NIC
 	)
 
 	if reg, err = regexp.Compile(regexpr); err != nil {
@@ -110,7 +120,11 @@ func List(regexpr string) (nics NICList, err error) {
 		klog.InfoS("found hardware NIC", "nic", iface.Name, "mac", iface.HardwareAddr, "flag", iface.Flags)
 		// filter by regexpr
 		if reg.MatchString(iface.Name) {
-			nics = append(nics, NewNIC(iface.Name))
+			if nic, err = NewNICInfo(iface.Name); err != nil {
+				klog.ErrorS(err, "failed to get NIC info", "nic", iface.Name, "mac", iface.HardwareAddr, "flag", iface.Flags)
+				return
+			}
+			nics = append(nics, nic)
 		}
 	}
 	return
@@ -175,24 +189,11 @@ func (n *NIC) getIRQs() (irqs irq.IRQList) {
 	return
 }
 
-// UpdateIRQs refresh irqs after change the queue channel of NIC
-func (n *NIC) UpdateIRQs() (old, new irq.IRQList) {
-	old = n.IRQs
-	new = n.getIRQs()
-	n.IRQs = new
-	return
-}
+func (n *NIC) getQueueChannel(reload bool) (channels *ethtool.Channels, err error) {
 
-func (n *NIC) SetIRQAffinity(cpus []int) (err error) {
-	for i, irq := range n.IRQs {
-		if e := irq.SetAffinity(cpus[i]); e != nil {
-			err = errors.Join(err, e)
-		}
+	if !reload && n.Queue != nil {
+		return n.Queue, nil
 	}
-	return
-}
-
-func (n *NIC) GetQueueChannel() (channels *ethtool.Channels, err error) {
 
 	var (
 		et *ethtool.Ethtool
@@ -207,6 +208,8 @@ func (n *NIC) GetQueueChannel() (channels *ethtool.Channels, err error) {
 	if ec, err = et.GetChannels(n.Name); err != nil {
 		return
 	}
+
+	klog.V(4).InfoS("get queue channel", "nic", n.Name, "queue", ec)
 	return &ec, err
 }
 
@@ -225,10 +228,21 @@ func (n *NIC) SetQueueChannel(desired ethtool.Channels) (channels *ethtool.Chann
 	if ec, err = et.SetChannels(n.Name, desired); err != nil {
 		return
 	}
+
+	// refresh IRQs
+	if n.Queue == nil || n.Queue.CombinedCount != ec.CombinedCount || n.Queue.RxCount != ec.RxCount || n.Queue.TxCount != ec.TxCount {
+		old, new := n.updateIRQs()
+		klog.InfoS("refresh NIC IRQs after set queue channel", "nic", n.Name, "old", formatter.NewYAML(old), "new", formatter.NewYAML(new))
+	}
+	n.Queue = &ec
 	return &ec, err
 }
 
-func (n *NIC) GetRingBuffer() (ring *ethtool.Ring, err error) {
+func (n *NIC) getRingBuffer(reload bool) (ring *ethtool.Ring, err error) {
+
+	if !reload && n.Ring != nil {
+		return n.Ring, nil
+	}
 
 	var (
 		et *ethtool.Ethtool
@@ -243,6 +257,8 @@ func (n *NIC) GetRingBuffer() (ring *ethtool.Ring, err error) {
 	if er, err = et.GetRing(n.Name); err != nil {
 		return
 	}
+
+	klog.V(4).InfoS("get ring buffer", "nic", n.Name, "ring", er)
 	return &er, err
 }
 
@@ -261,6 +277,8 @@ func (n *NIC) SetRingBuffer(desired ethtool.Ring) (ring *ethtool.Ring, err error
 	if er, err = et.SetRing(n.Name, desired); err != nil {
 		return
 	}
+
+	n.Ring = &er
 	return &er, err
 }
 
@@ -290,4 +308,24 @@ func (n *NIC) SetFeature(key string, value bool) (err error) {
 	defer et.Close()
 
 	return et.Change(n.Name, map[string]bool{key: value})
+}
+
+// updateIRQs refresh irqs after change the queue channel of NIC
+func (n *NIC) updateIRQs() (old, new irq.IRQList) {
+	old = n.IRQs
+	new = n.getIRQs()
+	n.IRQs = new
+	return
+}
+
+func (n *NIC) SetIRQAffinity(cpus []int) (err error) {
+	if ni, nc := len(n.IRQs), len(cpus); ni != nc {
+		return fmt.Errorf("the number of cpus %d is not equal to the number of irqs %d", ni, nc)
+	}
+	for i, irq := range n.IRQs {
+		if e := irq.SetAffinity(cpus[i]); e != nil {
+			err = errors.Join(err, e)
+		}
+	}
+	return
 }

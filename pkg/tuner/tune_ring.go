@@ -12,29 +12,24 @@ import (
 
 func (t *Tuner) TuneNICRingBufferMax(eth *nic.NIC) error {
 
-	// get NIC ring
-	ring, err := eth.GetRingBuffer()
-	if err != nil {
-		return errors.Wrap(err, "failed to get NIC ring")
-	}
-	klog.InfoS("get NIC ring buffer", "nic", eth.Name, "ring", ring)
+	r := eth.Ring
 
 	klog.InfoS("tune NIC ring buffer", "nic", eth.Name,
-		"RxJumbo", fmt.Sprintf("%d -> %d", ring.RxJumboPending, ring.RxJumboMaxPending),
-		"RxMini", fmt.Sprintf("%d -> %d", ring.RxMiniPending, ring.RxMiniPending),
-		"Tx", fmt.Sprintf("%d -> %d", ring.TxPending, ring.TxPending),
-		"Rx", fmt.Sprintf("%d -> %d", ring.RxPending, ring.RxPending),
+		"RxJumbo", fmt.Sprintf("%d -> %d", r.RxJumboPending, r.RxJumboMaxPending),
+		"RxMini", fmt.Sprintf("%d -> %d", r.RxMiniPending, r.RxMiniPending),
+		"Tx", fmt.Sprintf("%d -> %d", r.TxPending, r.TxPending),
+		"Rx", fmt.Sprintf("%d -> %d", r.RxPending, r.RxPending),
 	)
 
 	// tune NIC ring
-	if ring.RxJumboPending < ring.RxJumboMaxPending || ring.TxPending < ring.TxMaxPending || ring.RxPending < ring.RxMaxPending || ring.RxMiniPending < ring.RxMiniMaxPending {
+	if r.RxJumboPending < r.RxJumboMaxPending || r.TxPending < r.TxMaxPending || r.RxPending < r.RxMaxPending || r.RxMiniPending < r.RxMiniMaxPending {
 		if !option.DryRun {
-			ring.RxJumboPending = ring.RxJumboMaxPending
-			ring.RxMiniPending = ring.RxMiniMaxPending
-			ring.TxPending = ring.TxMaxPending
-			ring.RxPending = ring.RxMaxPending
+			r.RxJumboPending = r.RxJumboMaxPending
+			r.RxMiniPending = r.RxMiniMaxPending
+			r.TxPending = r.TxMaxPending
+			r.RxPending = r.RxMaxPending
 
-			curr, err := eth.SetRingBuffer(*ring)
+			curr, err := eth.SetRingBuffer(*r)
 			if err != nil {
 				return errors.Wrap(err, "failed to set NIC ring buffer")
 			}

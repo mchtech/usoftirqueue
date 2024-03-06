@@ -12,17 +12,23 @@ func (p *Profile) SetupKVM() (err error) {
 	if numCPU > p.largeNode {
 		return p.policies[policy.Steering](
 		// option.WithCPUSelectStrategy(option.CPUSelectStrategyScatter), // default
-		// option.WithCPUSelectMask(option.CPUSelectMaskAll),         // default
-		// option.WithTrafficSource(option.TrafficSourceFromOneOfNIC),          // default
+		// option.WithCPUSelectMask(option.CPUSelectMaskAll),             // default
+		// option.WithTrafficSource(option.TrafficSourceFromOneOfNIC),    // default
 		).Apply()
 	}
-	// // TODO: check virtio queue
-	// if isVirtIO, virtMaxNumQueue := true, 1; isVirtIO && virtMaxNumQueue == 1 && numCPU > virtMaxNumQueue {
-	// 	return p.policies[policy.Isolate]().Apply()
-	// }
+
+	// check max queue
+	if len(p.nics) > 0 && len(p.nics[0].IRQs) < numCPU {
+		return p.policies[policy.Steering](
+		// option.WithCPUSelectStrategy(option.CPUSelectStrategyScatter), // default
+		// option.WithCPUSelectMask(option.CPUSelectMaskAll),             // default
+		// option.WithTrafficSource(option.TrafficSourceFromOneOfNIC),    // default
+		).Apply()
+	}
+
 	return p.policies[policy.Static](
 	// option.WithCPUSelectStrategy(option.CPUSelectStrategyScatter), // default
-	// option.WithCPUSelectMask(option.CPUSelectMaskAll),         // default
-	// option.WithTrafficSource(option.TrafficSourceFromOneOfNIC),          // default
+	// option.WithCPUSelectMask(option.CPUSelectMaskAll),             // default
+	// option.WithTrafficSource(option.TrafficSourceFromOneOfNIC),    // default
 	).Apply()
 }

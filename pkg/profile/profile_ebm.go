@@ -33,7 +33,7 @@ func (p *Profile) SetupEBM() (err error) {
 	if numCPU&(numCPU-1) != 0 {
 		return p.policies[policy.Steering](
 			// option.WithCPUSelectStrategy(option.CPUSelectStrategyScatter), // default
-			// option.WithCPUSelectMask(option.CPUSelectMaskAll),         // default
+			// option.WithCPUSelectMask(option.CPUSelectMaskAll),             // default
 			option.WithTrafficSource(option.TrafficSourceCloudK8sENI),
 		).Apply()
 	}
@@ -46,13 +46,13 @@ func (p *Profile) SetupEBM() (err error) {
 		)
 		return p.policies[policy.Steering](
 			// option.WithCPUSelectStrategy(option.CPUSelectStrategyScatter), // default
-			// option.WithCPUSelectMask(option.CPUSelectMaskAll),         // default
+			// option.WithCPUSelectMask(option.CPUSelectMaskAll),             // default
 			option.WithTrafficSource(option.TrafficSourceCloudK8sENI),
 		).Apply()
 	} else {
 		klog.InfoS("num nics ≤ 2",
 			"CPUSelectStrategy", "scatter",
-			"CPUSelectMask", "local",
+			"CPUSelectMask", "all --> local",
 			"TrafficSource", "one_of_nic --> cloud_k8s_eni",
 		)
 		return p.policies[policy.Steering](

@@ -31,23 +31,23 @@ func (t *Tuner) kernelSupportXPSRXQS() bool {
 func (t *Tuner) DisableRPSRFSXPS(eths []*nic.NIC) (err error) {
 	klog.InfoS("disable RPS RFS aRFS XPS")
 	for _, eth := range eths {
-		if ch, _ := eth.GetQueueChannel(); ch != nil {
-			for i := 0; i < int(ch.CombinedCount); i++ {
+		if q := eth.Queue; q != nil {
+			for i := 0; i < int(q.CombinedCount); i++ {
 				err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/rx-%d/rps_cpus", eth.Name, i), "0"))
 				err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/rx-%d/rps_flow_cnt", eth.Name, i), "0"))
 				// err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/tx-%d/xps_cpus", eth.Name, i), "0"))
 				if t.kernelSupportXPSRXQS() {
-					err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/tx-%d/xps_rxqs", eth.Name, i), util.BitMask(false, int(ch.CombinedCount))))
+					err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/tx-%d/xps_rxqs", eth.Name, i), util.BitMask(false, int(q.CombinedCount))))
 				}
 			}
-			for i := 0; i < int(ch.RxCount); i++ {
+			for i := 0; i < int(q.RxCount); i++ {
 				err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/rx-%d/rps_cpus", eth.Name, i), "0"))
 				err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/rx-%d/rps_flow_cnt", eth.Name, i), "0"))
 			}
-			for i := 0; i < int(ch.TxCount); i++ {
+			for i := 0; i < int(q.TxCount); i++ {
 				// err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/tx-%d/xps_cpus", eth.Name, i), "0"))
 				if t.kernelSupportXPSRXQS() {
-					err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/tx-%d/xps_rxqs", eth.Name, i), util.BitMask(false, int(ch.TxCount))))
+					err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/tx-%d/xps_rxqs", eth.Name, i), util.BitMask(false, int(q.TxCount))))
 				}
 			}
 			// aRFS: if threads migrated frequently, it may take lots of cpu time to sync flow rule to NIC
@@ -108,15 +108,15 @@ func (t *Tuner) EnableRPSRFSXPS(eths []*nic.NIC, cpus *cpu.Topology, opt *option
 	for _, nicGroup := range nicGroups {
 		queuecount := 0
 		for _, eth := range nicGroup {
-			if ch, _ := eth.GetQueueChannel(); ch != nil {
-				if ch.CombinedCount > 0 {
-					queuecount += int(ch.CombinedCount)
+			if q := eth.Queue; q != nil {
+				if q.CombinedCount > 0 {
+					queuecount += int(q.CombinedCount)
 				} else {
-					queuecount += int(ch.RxCount)
+					queuecount += int(q.RxCount)
 				}
 			}
 		}
-		klog.InfoS("get total queue count", "nicgroup", nicGroup.Names(), "queues", queuecount)
+		klog.InfoS("get total num queue of this group", "nicgroup", nicGroup.Names(), "queues", queuecount)
 
 		conncountPerQueue := conncount / queuecount
 		conncountPerQueueN2 := util.RoundUpToPowerOfTwo(conncountPerQueue)
@@ -127,24 +127,24 @@ func (t *Tuner) EnableRPSRFSXPS(eths []*nic.NIC, cpus *cpu.Topology, opt *option
 		klog.InfoS("get connections per queue", "nicgroup", nicGroup.Names(), "conncountPerQueue", conncountPerQueueN2)
 
 		for _, eth := range nicGroup {
-			if ch, _ := eth.GetQueueChannel(); ch != nil {
-				for i := 0; i < int(ch.CombinedCount); i++ {
+			if q := eth.Queue; q != nil {
+				for i := 0; i < int(q.CombinedCount); i++ {
 					err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/rx-%d/rps_cpus", eth.Name, i), cpubm))
 					err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/rx-%d/rps_flow_cnt", eth.Name, i), ccpq))
 					// err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/tx-%d/xps_cpus", eth.Name, i), "cpubm"))
 					if t.kernelSupportXPSRXQS() {
-						err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/tx-%d/xps_rxqs", eth.Name, i), util.BitMask(false, int(ch.CombinedCount), i)))
+						err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/tx-%d/xps_rxqs", eth.Name, i), util.BitMask(false, int(q.CombinedCount), i)))
 					}
 				}
-				for i := 0; i < int(ch.RxCount); i++ {
+				for i := 0; i < int(q.RxCount); i++ {
 					err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/rx-%d/rps_cpus", eth.Name, i), cpubm))
 					err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/rx-%d/rps_flow_cnt", eth.Name, i), ccpq))
 				}
-				if ch.TxCount == ch.RxCount {
-					for i := 0; i < int(ch.TxCount); i++ {
+				if q.TxCount == q.RxCount {
+					for i := 0; i < int(q.TxCount); i++ {
 						// err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/tx-%d/xps_cpus", eth.Name, i), "cpubm"))
 						if t.kernelSupportXPSRXQS() {
-							err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/tx-%d/xps_rxqs", eth.Name, i), util.BitMask(false, int(ch.TxCount), i)))
+							err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/tx-%d/xps_rxqs", eth.Name, i), util.BitMask(false, int(q.TxCount), i)))
 						}
 					}
 				}
