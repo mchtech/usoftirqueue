@@ -109,6 +109,8 @@ func (p *Profile) Run() (err error) {
 		default:
 			err = p.SetupEBM()
 		}
+	case "Amazon EC2":
+		err = p.SetupECS()
 	default:
 		klog.InfoS("unknown chassis", "vendor", p.board)
 		err = p.SetupBM()
