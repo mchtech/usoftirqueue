@@ -6,9 +6,9 @@ import (
 
 func TestBitMask(t *testing.T) {
 
-	t.Logf("%d: %s : %s", 12, BitMask(false, 12), BitMask(true, 12))
-	t.Logf("%d: %s : %s", 96, BitMask(false, 96), BitMask(true, 96))
-	t.Logf("%d: %s : %s", 104, BitMask(false, 104), BitMask(true, 104))
+	t.Logf("%d: %s", 12, BitMask(12))
+	t.Logf("%d: %s", 96, BitMask(96))
+	t.Logf("%d: %s", 104, BitMask(104))
 
 	var cpu12, cpu96, cpu104 []int
 	for i := 0; i < 12; i++ {
@@ -20,13 +20,13 @@ func TestBitMask(t *testing.T) {
 	for i := 0; i < 104; i++ {
 		cpu104 = append(cpu104, i)
 	}
-	t.Logf("%d: %s : %s", 12, BitMask(false, 12, cpu12...), BitMask(true, 12, cpu12...))
-	t.Logf("%d: %s : %s", 96, BitMask(false, 96, cpu96...), BitMask(true, 96, cpu96...))
-	t.Logf("%d: %s : %s", 104, BitMask(false, 104, cpu104...), BitMask(true, 104, cpu104...))
+	t.Logf("%d: %s", 12, BitMask(12, cpu12...))
+	t.Logf("%d: %s", 96, BitMask(96, cpu96...))
+	t.Logf("%d: %s", 104, BitMask(104, cpu104...))
 
-	queue := 108
+	queue := 372
 	for i := 0; i < queue; i++ {
-		t.Logf("%d: %s : %s", i, BitMask(false, queue, i), BitMask(true, queue, i))
+		t.Logf("%d: %s", i, BitMask(queue, i))
 	}
 	t.Fail()
 }

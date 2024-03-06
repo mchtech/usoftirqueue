@@ -37,7 +37,7 @@ func (t *Tuner) DisableRPSRFSXPS(eths []*nic.NIC) (err error) {
 				err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/rx-%d/rps_flow_cnt", eth.Name, i), "0"))
 				// err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/tx-%d/xps_cpus", eth.Name, i), "0"))
 				if t.kernelSupportXPSRXQS() {
-					err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/tx-%d/xps_rxqs", eth.Name, i), util.BitMask(true, int(ch.CombinedCount))))
+					err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/tx-%d/xps_rxqs", eth.Name, i), util.BitMask(int(ch.CombinedCount))))
 				}
 			}
 			for i := 0; i < int(ch.RxCount); i++ {
@@ -47,7 +47,7 @@ func (t *Tuner) DisableRPSRFSXPS(eths []*nic.NIC) (err error) {
 			for i := 0; i < int(ch.TxCount); i++ {
 				// err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/tx-%d/xps_cpus", eth.Name, i), "0"))
 				if t.kernelSupportXPSRXQS() {
-					err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/tx-%d/xps_rxqs", eth.Name, i), util.BitMask(true, int(ch.TxCount))))
+					err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/tx-%d/xps_rxqs", eth.Name, i), util.BitMask(int(ch.TxCount))))
 				}
 			}
 			// aRFS: if threads migrated frequently, it may take lots of cpu time to sync flow rule to NIC
@@ -97,7 +97,7 @@ func (t *Tuner) EnableRPSRFSXPS(eths []*nic.NIC, cpus *cpu.Topology, opt *option
 	klog.InfoS("enable RPS RFS aRFS XPS")
 
 	// cpu bitmap for RPS
-	cpubm := util.BitMask(true, cpus.NumCPU(), cpus.CoreIDs(-1, false)...)
+	cpubm := util.BitMask(cpus.NumCPU(), cpus.CoreIDs(-1, false)...)
 	klog.InfoS("get cpu bitmask", "mask", cpubm)
 
 	// enable rfs
@@ -133,7 +133,7 @@ func (t *Tuner) EnableRPSRFSXPS(eths []*nic.NIC, cpus *cpu.Topology, opt *option
 					err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/rx-%d/rps_flow_cnt", eth.Name, i), ccpq))
 					// err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/tx-%d/xps_cpus", eth.Name, i), "cpubm"))
 					if t.kernelSupportXPSRXQS() {
-						err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/tx-%d/xps_rxqs", eth.Name, i), util.BitMask(true, int(ch.CombinedCount), i)))
+						err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/tx-%d/xps_rxqs", eth.Name, i), util.BitMask(int(ch.CombinedCount), i)))
 					}
 				}
 				for i := 0; i < int(ch.RxCount); i++ {
@@ -144,7 +144,7 @@ func (t *Tuner) EnableRPSRFSXPS(eths []*nic.NIC, cpus *cpu.Topology, opt *option
 					for i := 0; i < int(ch.TxCount); i++ {
 						// err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/tx-%d/xps_cpus", eth.Name, i), "cpubm"))
 						if t.kernelSupportXPSRXQS() {
-							err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/tx-%d/xps_rxqs", eth.Name, i), util.BitMask(true, int(ch.TxCount), i)))
+							err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/tx-%d/xps_rxqs", eth.Name, i), util.BitMask(int(ch.TxCount), i)))
 						}
 					}
 				}
