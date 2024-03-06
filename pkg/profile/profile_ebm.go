@@ -40,9 +40,9 @@ func (p *Profile) SetupEBM() (err error) {
 
 	if len(p.nics) > 2 {
 		klog.InfoS("num nics > 2",
-			"CPUSelectStrategy", "CPUSelectStrategyScatter",
-			"CPUSelectMask", "CPUSelectMaskAll",
-			"TrafficSource", "TrafficSourceFromOneOfNIC --> TrafficSourceCloudK8sENI",
+			"CPUSelectStrategy", "scatter",
+			"CPUSelectMask", "all",
+			"TrafficSource", "one_of_nic --> cloud_k8s_eni",
 		)
 		return p.policies[policy.Steering](
 			// option.WithCPUSelectStrategy(option.CPUSelectStrategyScatter), // default
@@ -51,9 +51,9 @@ func (p *Profile) SetupEBM() (err error) {
 		).Apply()
 	} else {
 		klog.InfoS("num nics ≤ 2",
-			"CPUSelectStrategy", "CPUSelectStrategyScatter",
-			"CPUSelectMask", "CPUSelectMaskLocalNUMA",
-			"TrafficSource", "TrafficSourceFromOneOfNIC --> TrafficSourceCloudK8sENI",
+			"CPUSelectStrategy", "scatter",
+			"CPUSelectMask", "local",
+			"TrafficSource", "one_of_nic --> cloud_k8s_eni",
 		)
 		return p.policies[policy.Steering](
 			// option.WithCPUSelectStrategy(option.CPUSelectStrategyScatter), // default
