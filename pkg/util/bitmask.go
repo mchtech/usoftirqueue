@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-func BitMask(total int, idxs ...int) (mask string) {
+func BitMask(removeLeadingZero bool, total int, idxs ...int) (mask string) {
 
 	sz := total / 32
 	if total%32 > 0 {
@@ -23,11 +23,11 @@ func BitMask(total int, idxs ...int) (mask string) {
 	cont := true
 	o := 0
 	for i := sz - 1; i >= 0; i-- {
-		if sz > 1 && cont && bms[i] == 0 {
+		if sz > 1 && i != 0 && cont && bms[i] == 0 {
 			continue
 		}
 		cont = false
-		if o == 0 {
+		if removeLeadingZero && o == 0 {
 			masks = append(masks, fmt.Sprintf("%x", bms[i]))
 		} else {
 			masks = append(masks, fmt.Sprintf("%08x", bms[i]))

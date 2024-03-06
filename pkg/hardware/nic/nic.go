@@ -171,7 +171,7 @@ func (n *NIC) getIRQs() (irqs irq.IRQList) {
 			irqs = append(irqs, irq)
 		}
 	}
-	klog.InfoS("filter TX/RX IRQs", "nic", n.Name, "driver", n.Driver, "bus", strings.ReplaceAll(n.Device, "/sys/devices/", ""), "irqs", irqs.Numbers())
+	klog.InfoS("filter TX/RX IRQs", "nic", n.Name, "driver", n.Driver, "bus", strings.ReplaceAll(n.Device, "/sys/devices/", ""), "count", len(irqs), "irqs", irqs.Numbers())
 	return
 }
 

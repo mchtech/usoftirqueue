@@ -4,17 +4,34 @@ import (
 	"testing"
 )
 
-func TestQueueMask(t *testing.T) {
-	t.Logf("%d: %s", 12, BitMask(12, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11))
+func TestBitMask(t *testing.T) {
+
+	t.Logf("%d: %s : %s", 12, BitMask(false, 12), BitMask(true, 12))
+	t.Logf("%d: %s : %s", 96, BitMask(false, 96), BitMask(true, 96))
+	t.Logf("%d: %s : %s", 104, BitMask(false, 104), BitMask(true, 104))
+
+	var cpu12, cpu96, cpu104 []int
+	for i := 0; i < 12; i++ {
+		cpu12 = append(cpu12, i)
+	}
+	for i := 0; i < 96; i++ {
+		cpu96 = append(cpu96, i)
+	}
+	for i := 0; i < 104; i++ {
+		cpu104 = append(cpu104, i)
+	}
+	t.Logf("%d: %s : %s", 12, BitMask(false, 12, cpu12...), BitMask(true, 12, cpu12...))
+	t.Logf("%d: %s : %s", 96, BitMask(false, 96, cpu96...), BitMask(true, 96, cpu96...))
+	t.Logf("%d: %s : %s", 104, BitMask(false, 104, cpu104...), BitMask(true, 104, cpu104...))
+
 	queue := 108
 	for i := 0; i < queue; i++ {
-		s := BitMask(queue, i)
-		t.Logf("%d: %s", i, s)
+		t.Logf("%d: %s : %s", i, BitMask(false, queue, i), BitMask(true, queue, i))
 	}
-	// t.Fail()
+	t.Fail()
 }
 
-func TestQueueMask2(t *testing.T) {
+func TestRoundUpToPowerOfTwo(t *testing.T) {
 	if RoundUpToPowerOfTwo(16384) != 16384 {
 		t.Fail()
 	}
