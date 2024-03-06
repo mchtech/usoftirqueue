@@ -25,6 +25,9 @@ func getCPUInfo() (cpus *cpu.Info, err error) {
 	if cpus, err = ghw.CPU(option.WithNullAlerter(), option.WithDisableTools()); err != nil {
 		return
 	}
+	sort.Slice(cpus.Processors, func(j, k int) bool {
+		return cpus.Processors[j].ID < cpus.Processors[k].ID
+	})
 	for p := range cpus.Processors {
 		cpus.Processors[p].Capabilities = nil
 		sort.Slice(cpus.Processors[p].Cores, func(j, k int) bool {
