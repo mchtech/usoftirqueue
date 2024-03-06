@@ -31,6 +31,7 @@ func (p *Profile) SetupEBM() (err error) {
 
 	// no standard cores: 12c / 24c / 96c / 104c / 192c ... : numCPU != numIRQ
 	if numCPU&(numCPU-1) != 0 {
+		klog.Info("num cpu != 2^n, so numIRQ != numCPU: use steering(cloud_k8s_eni)")
 		return p.policies[policy.Steering](
 			// option.WithCPUSelectStrategy(option.CPUSelectStrategyScatter), // default
 			// option.WithCPUSelectMask(option.CPUSelectMaskAll),             // default
@@ -39,22 +40,14 @@ func (p *Profile) SetupEBM() (err error) {
 	}
 
 	if len(p.nics) > 2 {
-		klog.InfoS("num nics > 2",
-			"CPUSelectStrategy", "scatter",
-			"CPUSelectMask", "all",
-			"TrafficSource", "one_of_nic --> cloud_k8s_eni",
-		)
+		klog.Info("num nic > 2, use steering(cloud_k8s_eni)")
 		return p.policies[policy.Steering](
 			// option.WithCPUSelectStrategy(option.CPUSelectStrategyScatter), // default
 			// option.WithCPUSelectMask(option.CPUSelectMaskAll),             // default
 			option.WithTrafficSource(option.TrafficSourceCloudK8sENI),
 		).Apply()
 	} else {
-		klog.InfoS("num nics ≤ 2",
-			"CPUSelectStrategy", "scatter",
-			"CPUSelectMask", "all --> local",
-			"TrafficSource", "one_of_nic --> cloud_k8s_eni",
-		)
+		klog.Info("num nic ≤ 2, use steering(cpu_local, cloud_k8s_eni)")
 		return p.policies[policy.Steering](
 			// option.WithCPUSelectStrategy(option.CPUSelectStrategyScatter), // default
 			option.WithCPUSelectMask(option.CPUSelectMaskLocalNUMA),

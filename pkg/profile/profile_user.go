@@ -8,6 +8,6 @@ import (
 )
 
 func (p *Profile) SetupUser(pl policy.IRQPolicy, opts ...option.OptionFunc) (err error) {
-	klog.InfoS("Setting up user policy", "name", pl, "options", opts)
+	klog.InfoS("use user policy", "name", pl, "options", opts)
 	return p.policies[pl](opts...).Apply()
 }
