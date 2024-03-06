@@ -35,7 +35,7 @@ func getChassisVendor() (chassis string, err error) {
 	if err != nil {
 		return
 	}
-	klog.InfoS("get chassis", "chassis", chassises.YAMLString())
+	klog.V(4).InfoS("get chassis", "chassis", chassises.YAMLString())
 	return strings.TrimSpace(chassises.Vendor), err
 }
 
@@ -44,7 +44,7 @@ func getProductName() (product string, err error) {
 	if err != nil {
 		return
 	}
-	klog.InfoS("get products", "products", products.YAMLString())
+	klog.V(4).InfoS("get products", "products", products.YAMLString())
 	return strings.TrimSpace(products.Name), err
 }
 
@@ -53,6 +53,6 @@ func getBIOSVendor() (bios string, err error) {
 	if err != nil {
 		return
 	}
-	klog.InfoS("get bios", "bios", bioses.YAMLString())
+	klog.V(4).InfoS("get bios", "bios", bioses.YAMLString())
 	return strings.TrimSpace(bioses.Vendor), err
 }

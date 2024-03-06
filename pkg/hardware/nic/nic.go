@@ -123,7 +123,7 @@ func (n *NIC) getDevice() string {
 	if strings.Contains(dev, "virtio") {
 		dev = filepath.Dir(dev)
 	}
-	klog.InfoS("get device", "nic", n.Name, "device", dev)
+	klog.V(4).InfoS("get device", "nic", n.Name, "device", dev)
 	return dev
 }
 
@@ -131,7 +131,7 @@ func (n *NIC) getDriver() string {
 	drvPath := fmt.Sprintf("/sys/class/net/%s/device/driver", n.Name)
 	s, _ := filepath.EvalSymlinks(drvPath)
 	drv := filepath.Base(s)
-	klog.InfoS("get driver", "nic", n.Name, "driver", drv)
+	klog.V(4).InfoS("get driver", "nic", n.Name, "driver", drv)
 	return drv
 }
 
@@ -150,7 +150,7 @@ func (n *NIC) getIRQs() (irqs irq.IRQList) {
 	for _, p := range irqNumsPath {
 		irqNums = append(irqNums, filepath.Base(p))
 	}
-	klog.InfoS("get irq numbers", "nic", n.Name, "irqs", irqNums)
+	klog.V(4).InfoS("get irq numbers", "nic", n.Name, "irqs", irqNums)
 
 	// get irq info
 	for _, irqNum := range irqNums {
@@ -159,7 +159,7 @@ func (n *NIC) getIRQs() (irqs irq.IRQList) {
 			klog.ErrorS(err, "failed to get irq info", "nic", n.Name, "irq", irqNum)
 			continue
 		}
-		klog.InfoS("get irq info", "nic", n.Name, "irq", formatter.NewYAML(irq))
+		klog.V(4).InfoS("get irq info", "nic", n.Name, "irq", formatter.NewYAML(irq))
 		if filter != nil {
 			for _, name := range irq.Names {
 				if filter.MatchString(name) {
@@ -171,7 +171,7 @@ func (n *NIC) getIRQs() (irqs irq.IRQList) {
 			irqs = append(irqs, irq)
 		}
 	}
-	klog.InfoS("filter TX/RX irqs", "nic", n.Name, "irqs", irqs.Numbers())
+	klog.InfoS("filter TX/RX IRQs", "nic", n.Name, "driver", n.Driver, "bus", strings.ReplaceAll(n.Device, "/sys/devices/", ""), "irqs", irqs.Numbers())
 	return
 }
 

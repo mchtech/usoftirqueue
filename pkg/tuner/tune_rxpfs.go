@@ -63,9 +63,9 @@ func (t *Tuner) EnableRPSRFSXPS(eths []*nic.NIC, cpus *cpu.Topology, opt *option
 
 	// expecting connections
 	conncount := opt.ExpectConnections
-	if conncountn2 := (conncount + 1) & -2; conncountn2 != conncount {
-		klog.InfoS("round up connection count", "from", conncount, "to", conncountn2)
-		conncount = conncountn2
+	conncountN2 := util.RoundUpToPowerOfTwo(conncount)
+	if conncountN2 != conncount {
+		klog.InfoS("round up connections", "from", conncount, "to", conncountN2)
 	}
 
 	// group nics according to flow mode
@@ -98,10 +98,10 @@ func (t *Tuner) EnableRPSRFSXPS(eths []*nic.NIC, cpus *cpu.Topology, opt *option
 
 	// cpu bitmap for RPS
 	cpubm := util.BitMask(cpus.NumCPU(), cpus.CoreIDs(-1, false)...)
-	klog.InfoS("get cpu bitmap", "bitmap", cpubm)
+	klog.InfoS("get cpu bitmask", "mask", cpubm)
 
 	// enable rfs
-	cc := strconv.Itoa(conncount)
+	cc := strconv.Itoa(conncountN2)
 	err = errors.Join(err, config.Write("/proc/sys/net/core/rps_sock_flow_entries", cc))
 
 	// enable rps flow
@@ -119,8 +119,12 @@ func (t *Tuner) EnableRPSRFSXPS(eths []*nic.NIC, cpus *cpu.Topology, opt *option
 		klog.InfoS("get total queue count", "nicgroup", nicGroup.Names(), "queues", queuecount)
 
 		conncountPerQueue := conncount / queuecount
-		ccpq := strconv.Itoa(conncountPerQueue)
-		klog.InfoS("get connection count per queue", "nicgroup", nicGroup.Names(), "conncount", conncount, "conncountPerQueue", conncountPerQueue)
+		conncountPerQueueN2 := util.RoundUpToPowerOfTwo(conncountPerQueue)
+		if conncountPerQueueN2 != conncountPerQueue {
+			klog.InfoS("round up per-queue connections", "from", conncountPerQueue, "to", conncountPerQueueN2)
+		}
+		ccpq := strconv.Itoa(conncountPerQueueN2)
+		klog.InfoS("get connections per queue", "nicgroup", nicGroup.Names(), "conncountPerQueue", conncountPerQueueN2)
 
 		for _, eth := range nicGroup {
 			if ch, _ := eth.GetQueueChannel(); ch != nil {

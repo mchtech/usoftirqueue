@@ -17,7 +17,7 @@ func (t *Tuner) TuneNICQueueChannelMax(eth *nic.NIC, totalCPUCount uint32) error
 	if err != nil {
 		return errors.Wrap(err, "failed to get NIC queue channel")
 	}
-	klog.InfoS("current NIC queue channel", "nic", eth.Name, "queue", formatter.NewYAML(ech))
+	klog.InfoS("current NIC queue channel", "nic", eth.Name, "queue", ech)
 
 	// calculate desired queue channel
 	desiredCombined := ech.MaxCombined

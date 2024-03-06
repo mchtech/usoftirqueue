@@ -13,3 +13,21 @@ func TestQueueMask(t *testing.T) {
 	}
 	// t.Fail()
 }
+
+func TestQueueMask2(t *testing.T) {
+	if RoundUpToPowerOfTwo(16384) != 16384 {
+		t.Fail()
+	}
+	if RoundUpToPowerOfTwo(512*16384) != 512*16384 {
+		t.Fail()
+	}
+	if RoundUpToPowerOfTwo(12*16384) != 16*16384 {
+		t.Fail()
+	}
+	if RoundUpToPowerOfTwo(104*16384) != 128*16384 {
+		t.Fail()
+	}
+	if RoundUpToPowerOfTwo(384*16384) != 512*16384 {
+		t.Fail()
+	}
+}

@@ -17,6 +17,10 @@ func Write(file, value string) error {
 		klog.InfoS("write kernel config", "key", file, "value", fmt.Sprintf("%s -> %s", curr, value))
 	}
 
+	if curr == value {
+		return nil
+	}
+
 	h, err := os.OpenFile(file, os.O_WRONLY, 0)
 	if err != nil {
 		return err

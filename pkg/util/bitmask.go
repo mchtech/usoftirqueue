@@ -36,3 +36,19 @@ func BitMask(total int, idxs ...int) (mask string) {
 	}
 	return strings.Join(masks, ",")
 }
+
+func RoundUpToPowerOfTwo(n int) int {
+	if n <= 2 || n&(n-1) == 0 {
+		return n
+	}
+
+	var c, v int
+	for v := n; v != 0; c++ {
+		v >>= 1
+	}
+	v = 1 << c
+	if n > v {
+		return n
+	}
+	return v
+}

@@ -17,7 +17,7 @@ func (t *Tuner) TuneNICRingBufferMax(eth *nic.NIC) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to get NIC ring")
 	}
-	klog.InfoS("get NIC ring buffer", "nic", eth.Name, "ring", formatter.NewYAML(ring))
+	klog.InfoS("get NIC ring buffer", "nic", eth.Name, "ring", ring)
 
 	klog.InfoS("tune NIC ring buffer", "nic", eth.Name,
 		"RxJumbo", fmt.Sprintf("%d -> %d", ring.RxJumboPending, ring.RxJumboMaxPending),

@@ -36,7 +36,7 @@ func getCPUInfo() (cpus *cpu.Info, err error) {
 			})
 		}
 	}
-	klog.InfoS("get cpus", "topology", cpus.YAMLString())
+	klog.V(4).InfoS("get cpus", "topology", cpus.YAMLString())
 	return
 }
 
