@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-func BitMap(total int, idxs ...int) (mask string) {
+func BitMask(total int, idxs ...int) (mask string) {
 
 	sz := total / 32
 	if total%32 > 0 {

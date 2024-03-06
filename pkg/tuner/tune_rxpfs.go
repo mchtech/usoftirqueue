@@ -96,6 +96,10 @@ func (t *Tuner) EnableRPSRFSXPS(eths []*nic.NIC, cpus *cpu.Topology, opt *option
 	// apply rps_flow_cnt for each nic group
 	klog.InfoS("enable RPS RFS aRFS XPS")
 
+	// cpu bitmap for RPS
+	cpubm := util.BitMask(cpus.NumCPU(), cpus.CoreIDs(-1, false)...)
+	klog.InfoS("get cpu bitmap", "bitmap", cpubm)
+
 	// enable rfs
 	cc := strconv.Itoa(conncount)
 	err = errors.Join(err, config.Write("/proc/sys/net/core/rps_sock_flow_entries", cc))
@@ -118,10 +122,6 @@ func (t *Tuner) EnableRPSRFSXPS(eths []*nic.NIC, cpus *cpu.Topology, opt *option
 		ccpq := strconv.Itoa(conncountPerQueue)
 		klog.InfoS("get connection count per queue", "nicgroup", nicGroup.Names(), "conncount", conncount, "conncountPerQueue", conncountPerQueue)
 
-		// cpu bitmap for RPS
-		cpubm := util.BitMap(cpus.NumCPU(), cpus.CoreIDs(-1, false)...)
-		klog.InfoS("get cpu bitmap", "bitmap", cpubm)
-
 		for _, eth := range nicGroup {
 			if ch, _ := eth.GetQueueChannel(); ch != nil {
 				for i := 0; i < int(ch.CombinedCount); i++ {
@@ -129,7 +129,7 @@ func (t *Tuner) EnableRPSRFSXPS(eths []*nic.NIC, cpus *cpu.Topology, opt *option
 					err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/rx-%d/rps_flow_cnt", eth.Name, i), ccpq))
 					// err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/tx-%d/xps_cpus", eth.Name, i), "cpubm"))
 					if t.kernelSupportXPSRXQS() {
-						err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/tx-%d/xps_rxqs", eth.Name, i), util.BitMap(int(ch.CombinedCount), i+1)))
+						err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/tx-%d/xps_rxqs", eth.Name, i), util.BitMask(int(ch.CombinedCount), i+1)))
 					}
 				}
 				for i := 0; i < int(ch.RxCount); i++ {
@@ -140,7 +140,7 @@ func (t *Tuner) EnableRPSRFSXPS(eths []*nic.NIC, cpus *cpu.Topology, opt *option
 					for i := 0; i < int(ch.TxCount); i++ {
 						// err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/tx-%d/xps_cpus", eth.Name, i), "cpubm"))
 						if t.kernelSupportXPSRXQS() {
-							err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/tx-%d/xps_rxqs", eth.Name, i), util.BitMap(int(ch.CombinedCount), i+1)))
+							err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/tx-%d/xps_rxqs", eth.Name, i), util.BitMask(int(ch.CombinedCount), i+1)))
 						}
 					}
 				}
