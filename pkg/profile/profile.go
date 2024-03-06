@@ -34,12 +34,12 @@ func New(nicRegex string, largeNodeThresh, expectConnections int, userPolicy pol
 		nics []*nic.NIC
 	)
 
-	// board info
-	if bi, err = board.Collect(); err != nil {
-		klog.ErrorS(err, "failed to get board info")
-		return
+	// get NICs
+	if nics, err = nic.List(nicRegex); err != nil {
+		klog.ErrorS(err, "failed to get NICs", "regexp", nicRegex)
+		return nil, err
 	}
-	klog.InfoS("board info", "chassis", bi.ChassisVendor, "product", bi.ProductName, "bios", bi.BIOSVendor)
+	klog.InfoS("target NICs", "nics", nic.NICList(nics).Names(), "filter", nicRegex)
 
 	// get CPU topology
 	if cpus, err = cpu.List(); err != nil {
@@ -48,12 +48,12 @@ func New(nicRegex string, largeNodeThresh, expectConnections int, userPolicy pol
 	}
 	klog.InfoS("CPU topology", "numa", cpus.NumNUMA(), "total", cpus.NumCPU(), "local", cpus.NumLocalCPU(0))
 
-	// get NICs
-	if nics, err = nic.List(nicRegex); err != nil {
-		klog.ErrorS(err, "failed to get NICs", "regexp", nicRegex)
-		return nil, err
+	// board info
+	if bi, err = board.Collect(); err != nil {
+		klog.ErrorS(err, "failed to get board info")
+		return
 	}
-	klog.InfoS("target NICs", "nics", nic.NICList(nics).Names(), "filter", nicRegex)
+	klog.InfoS("board info", "chassis", bi.ChassisVendor, "product", bi.ProductName, "bios", bi.BIOSVendor)
 
 	// init profile
 	p = &Profile{
@@ -65,6 +65,9 @@ func New(nicRegex string, largeNodeThresh, expectConnections int, userPolicy pol
 		userPolicy:        userPolicy,
 		userPolicyOpts:    userPolicyOpts,
 		policies: map[policy.IRQPolicy]func(opts ...option.OptionFunc) policy.Policy{
+			policy.Common: func(opts ...option.OptionFunc) policy.Policy {
+				return policy.NewCommonPolicy(cpus, nics)
+			},
 			policy.Static: func(opts ...option.OptionFunc) policy.Policy {
 				return policy.NewStaticPolicy(cpus, nics, opts...)
 			},

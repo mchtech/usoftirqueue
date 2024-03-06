@@ -19,17 +19,20 @@ type IRQ struct {
 
 type IRQList []IRQ
 
-func (l IRQList) GetActivatedIRQs() (q []int) {
+func (l IRQList) GetActivatedIRQs() (q IRQList) {
 	for _, i := range l {
 		if i.Activated {
-			q = append(q, i.IRQ)
+			q = append(q, i)
 		}
 	}
 	return
 }
 
-func (l IRQList) NumIRQ() int {
-	return len(l)
+func (l IRQList) Numbers() (q []int) {
+	for _, i := range l {
+		q = append(q, i.IRQ)
+	}
+	return
 }
 
 func New(irq string) IRQ {

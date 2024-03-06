@@ -23,9 +23,8 @@ func (t *Tuner) TuneIRQ(eth *nic.NIC, cpus *cpu.Topology, opt *option.Option) (e
 
 	var desiredAffinity []int
 
-	// TODO: filter enabled
-	irqs := eth.IRQs
-	numIRQ := irqs.NumIRQ()
+	irqs := eth.IRQs.GetActivatedIRQs()
+	numIRQ := len(irqs)
 	numCore := cpus.NumCPU()
 
 	var numa int
@@ -82,7 +81,7 @@ func (t *Tuner) TuneIRQ(eth *nic.NIC, cpus *cpu.Topology, opt *option.Option) (e
 		if err = eth.SetIRQAffinity(desiredAffinity); err != nil {
 			return errors.Wrap(err, "failed to set NIC IRQ affinity")
 		}
-		klog.InfoS("finish tuning NIC IRQ affinity", "nic", eth.Name, "irq", irqs.GetActivatedIRQs(), "affinity", desiredAffinity)
+		klog.InfoS("finish tuning NIC IRQ affinity", "nic", eth.Name, "irq", irqs.Numbers(), "affinity", desiredAffinity)
 	} else {
 		klog.InfoS("dryrun mode: skip tuning NIC IRQ affinity", "nic", eth.Name)
 	}

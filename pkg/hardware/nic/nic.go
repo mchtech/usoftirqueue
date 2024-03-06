@@ -96,12 +96,13 @@ func List(regexpr string) (nics NICList, err error) {
 	for _, iface := range ifaces {
 		dev, _ := filepath.EvalSymlinks(fmt.Sprintf("/sys/class/net/%s", iface.Name))
 		if strings.Contains(dev, "/virtual/net/") {
-			klog.InfoS("ignore virtual NIC", "nic", iface.Name)
+			klog.InfoS("ignore software NIC", "nic", iface.Name)
 			continue
 		}
+		klog.InfoS("found hardware NIC", "nic", iface.Name)
 		phyNICs = append(phyNICs, iface)
 	}
-	klog.InfoS("get all phy NICs", "nics", formatter.NewYAML(phyNICs))
+	klog.InfoS("get all physical NICs", "nics", formatter.NewYAML(phyNICs))
 
 	// filter NICs by regexpr
 	for _, iface := range phyNICs {
@@ -167,6 +168,7 @@ func (n *NIC) getIRQs() (irqs irq.IRQList) {
 	return
 }
 
+// UpdateIRQs refresh irqs after change the queue channel of NIC
 func (n *NIC) UpdateIRQs() (old, new irq.IRQList) {
 	old = n.IRQs
 	new = n.getIRQs()
@@ -174,6 +176,7 @@ func (n *NIC) UpdateIRQs() (old, new irq.IRQList) {
 	return
 }
 
+// SetIRQAffinity set irq affinity for each activated irq
 func (n *NIC) SetIRQAffinity(cpus []int) (err error) {
 	for i, irq := range n.IRQs {
 		if !irq.Activated {

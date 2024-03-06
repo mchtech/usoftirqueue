@@ -25,10 +25,9 @@ type CommonPolicy struct {
 
 func NewCommonPolicy(cpu *cpu.Topology, nics []*nic.NIC) *CommonPolicy {
 	return &CommonPolicy{
-		name: string(Common),
-		cpus: cpu,
-		nics: nics,
-		// option: option.ParseOptions(opts...),
+		name:  string(Common),
+		cpus:  cpu,
+		nics:  nics,
 		tuner: tuner.New(),
 	}
 }
