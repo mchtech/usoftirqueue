@@ -2,25 +2,38 @@ package profile
 
 import (
 	"usoftirqueue/pkg/policy"
+
+	"k8s.io/klog/v2"
 )
 
 func (p *Profile) SetupKVM() (err error) {
 
-	numCPU := int(p.cpus.TotalThreads)
+	numCPU := p.cpus.NumCPU()
 
 	// large node: prefer to redirect softirqs to application cores
 	if numCPU > p.largeNode {
-		return p.policies[policy.Isolate](
-		// option.WithCPUSelectPolicy(option.CPUSelectPolicyFromFirstCore), // default
-		// option.WithCPUSelectMask(option.CPUSelectMaskAuto),              // default
+		klog.Info("numCPU > threshold: use steering()")
+		return p.policies[policy.Steering](
+		// option.WithCPUSelectStrategy(option.CPUSelectStrategyScatter), // default
+		// option.WithCPUSelectMask(option.CPUSelectMaskAll),             // default
+		// option.WithTrafficSource(option.TrafficSourceFromOneOfNIC),    // default
 		).Apply()
 	}
-	// // TODO: check virtio queue
-	// if isVirtIO, virtMaxNumQueue := true, 1; isVirtIO && virtMaxNumQueue == 1 && numCPU > virtMaxNumQueue {
-	// 	return p.policies[policy.Isolate]().Apply()
-	// }
-	return p.policies[policy.Spread](
-	// option.WithCPUSelectPolicy(option.CPUSelectPolicyFromFirstCore), // default
-	// option.WithCPUSelectMask(option.CPUSelectMaskAuto), // default
+
+	// check max irqs
+	if len(p.nics) > 0 && len(p.nics[0].IRQs) < numCPU {
+		klog.Info("numIRQ < numCPU: use steering()")
+		return p.policies[policy.Steering](
+		// option.WithCPUSelectStrategy(option.CPUSelectStrategyScatter), // default
+		// option.WithCPUSelectMask(option.CPUSelectMaskAll),             // default
+		// option.WithTrafficSource(option.TrafficSourceFromOneOfNIC),    // default
+		).Apply()
+	}
+
+	klog.Info("use static()")
+	return p.policies[policy.Static](
+	// option.WithCPUSelectStrategy(option.CPUSelectStrategyScatter), // default
+	// option.WithCPUSelectMask(option.CPUSelectMaskAll),             // default
+	// option.WithTrafficSource(option.TrafficSourceFromOneOfNIC),    // default
 	).Apply()
 }

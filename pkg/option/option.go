@@ -1,24 +1,56 @@
 package option
 
-type CPUSelectPolicy int
-
-const (
-	CPUSelectPolicyFromFirstCore CPUSelectPolicy = iota // select cpus: from first core everytime (default)
-	CPUSelectPolicyFromIterator                         // select cpus: continue from previous core
+// global options
+var (
+	DryRun bool
 )
 
+// CPUSelectStrategy
+type CPUSelectStrategy int
+
+const (
+	CPUSelectStrategyScatter    CPUSelectStrategy = iota // select cpus: scatter from cores with round offset (default)
+	CPUSelectStrategyRoundRobin                          // select cpus: continue from previous core
+)
+
+var StringToCPUSelectStrategy = map[string]CPUSelectStrategy{
+	"scatter":    CPUSelectStrategyScatter,
+	"roundrobin": CPUSelectStrategyRoundRobin,
+}
+
+// CPUSelectMask
 type CPUSelectMask int
 
 const (
-	CPUSelectMaskAuto      CPUSelectMask = 0x0 // select cores according to num irq (default)
-	CPUSelectMaskAll       CPUSelectMask = 0x1 // select all cores
-	CPUSelectMaskLocalNUMA CPUSelectMask = 0x2 // select local numa cores
+	CPUSelectMaskAll       CPUSelectMask = iota // select all cores
+	CPUSelectMaskLocalNUMA                      // select local numa cores
 )
 
+var StringToCPUSelectMask = map[string]CPUSelectMask{
+	"all":   CPUSelectMaskAll,
+	"local": CPUSelectMaskLocalNUMA,
+}
+
+// TrafficSource
+type TrafficSource int
+
+const (
+	TrafficSourceFromOneOfNIC  TrafficSource = iota // rx from one of all NICs
+	TrafficSourceAvgFromAllNIC                      // rx from all NICs avg (e.g. bond)
+	TrafficSourceCloudK8sENI                        // rx from main NIC and/or other NICs (k8s ecs/ebm: hostNetwork: eth0, CNI Network: eth1..ethx)
+)
+
+var StringToTrafficSource = map[string]TrafficSource{
+	"one_of_all":    TrafficSourceFromOneOfNIC,
+	"avg_from_all":  TrafficSourceAvgFromAllNIC,
+	"cloud_k8s_eni": TrafficSourceCloudK8sENI,
+}
+
 type Option struct {
-	CPUSelectPolicy   CPUSelectPolicy
+	CPUSelectStrategy CPUSelectStrategy
 	CPUSelectMask     CPUSelectMask
-	ExpectConnections int
+	TrafficSource     TrafficSource // for RFS
+	ExpectConnections int           // for RFS
 }
 
 type OptionFunc func(*Option)
@@ -31,15 +63,21 @@ func ParseOptions(opts ...OptionFunc) *Option {
 	return opt
 }
 
-func WithCPUSelectPolicy(p CPUSelectPolicy) OptionFunc {
+func WithCPUSelectStrategy(p CPUSelectStrategy) OptionFunc {
 	return func(opt *Option) {
-		opt.CPUSelectPolicy = p
+		opt.CPUSelectStrategy = p
 	}
 }
 
 func WithCPUSelectMask(m CPUSelectMask) OptionFunc {
 	return func(opt *Option) {
 		opt.CPUSelectMask = m
+	}
+}
+
+func WithTrafficSource(m TrafficSource) OptionFunc {
+	return func(opt *Option) {
+		opt.TrafficSource = m
 	}
 }
 
