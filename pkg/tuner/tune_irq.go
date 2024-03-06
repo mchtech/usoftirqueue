@@ -23,14 +23,14 @@ func (t *Tuner) TuneIRQ(eth *nic.NIC, cpus *cpu.Topology, opt *option.Option) (e
 
 	var desiredAffinity []int
 
-	irqs := eth.IRQs.GetActivatedIRQs()
+	irqs := eth.IRQs
 	numIRQ := len(irqs)
 	numCore := cpus.NumCPU()
 
 	var numa int
 	switch opt.CPUSelectMask {
 	case option.CPUSelectMaskLocalNUMA:
-		numa = irqs[0].NUMA
+		numa = irqs[0].NUMAID
 	case option.CPUSelectMaskAll:
 		numa = -1
 	default:
@@ -68,10 +68,9 @@ func (t *Tuner) TuneIRQ(eth *nic.NIC, cpus *cpu.Topology, opt *option.Option) (e
 	for i := 0; i < numIRQ; i++ {
 		klog.InfoS("tune NIC IRQ affinity",
 			"nic", eth.Name,
-			"irq", irqs[i].IRQ,
-			"name", irqs[i].Name,
 			"driver", eth.Driver,
-			// "bus", eth.Device,
+			"irq", irqs[i].Number,
+			"name", irqs[i].Name,
 			"affinity", fmt.Sprintf("%v -> %v", irqs[i].Affinity, []int{desiredAffinity[i]}),
 		)
 	}

@@ -151,7 +151,11 @@ func (n *NIC) getIRQs() (irqs irq.IRQList) {
 
 	// get irq info
 	for _, irqNum := range irqNums {
-		irq := irq.New(irqNum)
+		irq, err := irq.New(irqNum)
+		if err != nil {
+			klog.ErrorS(err, "failed to get irq info", "nic", n.Name, "irq", irqNum)
+			continue
+		}
 		klog.InfoS("get irq info", "nic", n.Name, "irq", irq)
 		if filter != nil {
 			for _, name := range irq.Names {
@@ -176,12 +180,8 @@ func (n *NIC) UpdateIRQs() (old, new irq.IRQList) {
 	return
 }
 
-// SetIRQAffinity set irq affinity for each activated irq
 func (n *NIC) SetIRQAffinity(cpus []int) (err error) {
 	for i, irq := range n.IRQs {
-		if !irq.Activated {
-			continue
-		}
 		if e := irq.SetAffinity(cpus[i]); e != nil {
 			err = errors.Join(err, e)
 		}

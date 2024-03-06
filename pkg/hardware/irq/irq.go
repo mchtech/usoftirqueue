@@ -6,36 +6,28 @@ import (
 	"strconv"
 	"strings"
 	"usoftirqueue/pkg/util/config"
+
+	"github.com/pkg/errors"
 )
 
 type IRQ struct {
-	Activated bool
-	Name      string
-	Names     []string
-	IRQ       int
-	NUMA      int
-	Affinity  []int
+	Name     string
+	Names    []string
+	Number   int
+	NUMAID   int
+	Affinity []int
 }
 
 type IRQList []IRQ
 
-func (l IRQList) GetActivatedIRQs() (q IRQList) {
-	for _, i := range l {
-		if i.Activated {
-			q = append(q, i)
-		}
-	}
-	return
-}
-
 func (l IRQList) Numbers() (q []int) {
 	for _, i := range l {
-		q = append(q, i.IRQ)
+		q = append(q, i.Number)
 	}
 	return
 }
 
-func New(irq string) IRQ {
+func New(irq string) (IRQ, error) {
 
 	irqInt, _ := strconv.Atoi(irq)
 
@@ -43,10 +35,10 @@ func New(irq string) IRQ {
 	var names []string
 	f, err := os.Open(fmt.Sprintf("/proc/irq/%s/", irq))
 	if err != nil {
-		return IRQ{
-			IRQ:       irqInt,
-			Activated: false,
+		if os.IsNotExist(err) {
+			err = errors.Wrapf(err, "IRQ %s is not activated", irq)
 		}
+		return IRQ{Number: irqInt}, err
 	}
 
 	defer f.Close()
@@ -76,21 +68,17 @@ func New(irq string) IRQ {
 	}
 
 	return IRQ{
-		Activated: true,
-		Name:      strings.Join(names, ","),
-		Names:     names,
-		IRQ:       irqInt,
-		NUMA:      numa,
-		Affinity:  affinityInt,
-	}
+		Name:     strings.Join(names, ","),
+		Names:    names,
+		Number:   irqInt,
+		NUMAID:   numa,
+		Affinity: affinityInt,
+	}, nil
 }
 
 func (irq *IRQ) SetAffinity(cpu int) (err error) {
-	if !irq.Activated {
-		return fmt.Errorf("IRQ %d is not activated", irq.IRQ)
-	}
 	return config.Write(
-		fmt.Sprintf("/proc/irq/%d/smp_affinity_list", irq.IRQ),
+		fmt.Sprintf("/proc/irq/%d/smp_affinity_list", irq.Number),
 		fmt.Sprintf("%d", cpu),
 	)
 }
