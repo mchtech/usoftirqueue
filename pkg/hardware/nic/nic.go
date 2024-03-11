@@ -232,7 +232,7 @@ func (n *NIC) SetQueueChannel(desired ethtool.Channels) (channels *ethtool.Chann
 	// refresh IRQs
 	if n.Queue == nil || n.Queue.CombinedCount != ec.CombinedCount || n.Queue.RxCount != ec.RxCount || n.Queue.TxCount != ec.TxCount {
 		old, new := n.updateIRQs()
-		klog.InfoS("refresh NIC IRQs after set queue channel", "nic", n.Name, "old", formatter.NewYAML(old), "new", formatter.NewYAML(new))
+		klog.InfoS("refresh NIC IRQs after setting queue channel", "nic", n.Name, "old", formatter.NewYAML(old), "new", formatter.NewYAML(new))
 	}
 	n.Queue = &ec
 	return &ec, err

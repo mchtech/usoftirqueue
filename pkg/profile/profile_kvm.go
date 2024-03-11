@@ -12,7 +12,7 @@ func (p *Profile) SetupKVM() (err error) {
 
 	// large node: prefer to redirect softirqs to application cores
 	if numCPU > p.largeNode {
-		klog.Info("numCPU > threshold: use steering()")
+		klog.Info("num cpu > threshold: use steering()")
 		return p.policies[policy.Steering](
 		// option.WithCPUSelectStrategy(option.CPUSelectStrategyScatter), // default
 		// option.WithCPUSelectMask(option.CPUSelectMaskAll),             // default
@@ -22,7 +22,7 @@ func (p *Profile) SetupKVM() (err error) {
 
 	// check max irqs
 	if len(p.nics) > 0 && len(p.nics[0].IRQs) < numCPU {
-		klog.Info("numIRQ < numCPU: use steering()")
+		klog.Info("num irq < num cpu: use steering()")
 		return p.policies[policy.Steering](
 		// option.WithCPUSelectStrategy(option.CPUSelectStrategyScatter), // default
 		// option.WithCPUSelectMask(option.CPUSelectMaskAll),             // default

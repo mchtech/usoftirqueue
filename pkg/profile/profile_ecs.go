@@ -23,7 +23,7 @@ func (p *Profile) SetupECS() (err error) {
 
 	// large node: prefer to redirect softirqs to application cores
 	if numCPU > p.largeNode {
-		klog.Info("numCPU > threshold: use steering(cloud_k8s_eni)")
+		klog.Info("num cpu > threshold: use steering(cloud_k8s_eni)")
 		return p.policies[policy.Steering](
 			// option.WithCPUSelectStrategy(option.CPUSelectStrategyScatter), // default
 			// option.WithCPUSelectMask(option.CPUSelectMaskAll),             // default
