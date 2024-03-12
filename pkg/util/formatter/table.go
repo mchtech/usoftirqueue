@@ -17,7 +17,7 @@ type Table[TK comparable, TC any] struct {
 
 type item[TK comparable, TC any] struct {
 	colume1 colume1[TK]
-	columes colume[TC]
+	columes columen[TC]
 }
 
 type colume1[T comparable] struct {
@@ -25,7 +25,7 @@ type colume1[T comparable] struct {
 	str string
 }
 
-type colume[T any] struct {
+type columen[T any] struct {
 	raw T
 	str string
 }
@@ -50,13 +50,13 @@ func NewTableFromMap[TK comparable, TC any](m map[TK]TC, header []string) *Table
 	for k, v := range m {
 		t.rows[i] = item[TK, TC]{
 			colume1: colume1[TK]{raw: k, str: fmt.Sprintf("%v", k)},
-			columes: colume[TC]{raw: v, str: fmt.Sprintf("%v", v)},
+			columes: columen[TC]{raw: v, str: fmt.Sprintf("%v", v)},
 		}
 		i++
 	}
 	sort.Sort(t)
 
-	t.rows = append([]item[TK, TC]{{colume1: colume1[TK]{str: header[0]}, columes: colume[TC]{str: header[1]}}}, t.rows...)
+	t.rows = append([]item[TK, TC]{{colume1: colume1[TK]{str: header[0]}, columes: columen[TC]{str: header[1]}}}, t.rows...)
 	for _, row := range t.rows {
 		if l := len(row.colume1.str); l > t.maxWidth[0] {
 			t.maxWidth[0] = l
