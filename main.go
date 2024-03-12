@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"time"
 	"usoftirqueue/pkg/hardware/nic"
@@ -12,6 +13,11 @@ import (
 	"usoftirqueue/pkg/util/formatter"
 
 	"k8s.io/klog/v2"
+)
+
+var (
+	buildat string
+	commit  string
 )
 
 var (
@@ -33,6 +39,8 @@ func main() {
 		p              *profile.Profile
 		userPolicy     policy.IRQPolicy
 		userPolicyOpts []option.OptionFunc
+		version        string
+		v              bool
 	)
 
 	// klog flags
@@ -42,6 +50,7 @@ func main() {
 	flag.Set("log_file", logFile)
 	flag.Set("alsologtostderr", "true")
 	// prog flags
+	flag.BoolVar(&v, "version", v, "show version")
 	flag.BoolVar(&option.DryRun, "option.dry-run", false, "dry run")
 	flag.StringVar(&irqPolicy, "option.policy", irqPolicy, `
 ┌──────────┬────────────────────────────────────────────────┐
@@ -98,7 +107,14 @@ func main() {
 	flag.IntVar(&expectConnections, "option.expect-connections", expectConnections, "required for RFS: estimated max concurrent connections that the node can process\n"+formatter.NewTableFromMap(policy.CoreToConnections, []string{"cpu", "connections"}).String())
 	flag.IntVar(&policy.BaseConnectionsPerCore, "option.connections-per-core", policy.BaseConnectionsPerCore, "required for RFS: connections per cpu core (only valid when num-cpu does not exist in `num-cpu:connections` map)")
 	flag.Parse()
-	klog.InfoS("starting", "at", time.Now().Format(time.RFC3339Nano))
+
+	if v {
+		version = fmt.Sprintf("%s-%s", buildat, commit)
+		fmt.Println(version)
+		os.Exit(0)
+	}
+
+	klog.InfoS("starting", "at", time.Now().Format(time.RFC3339Nano), "version", version)
 
 	// user-override options
 	if irqPolicy == "auto" && (cpuStrategy != "auto" || cpuMask != "auto" || trafficSource != "auto") {
