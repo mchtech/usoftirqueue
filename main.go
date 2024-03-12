@@ -108,8 +108,8 @@ func main() {
 	flag.IntVar(&policy.BaseConnectionsPerCore, "option.connections-per-core", policy.BaseConnectionsPerCore, "required for RFS: connections per cpu core (only valid when num-cpu does not exist in `num-cpu:connections` map)")
 	flag.Parse()
 
+	version = fmt.Sprintf("%s-%s", buildat, commit)
 	if v {
-		version = fmt.Sprintf("%s-%s", buildat, commit)
 		fmt.Println(version)
 		os.Exit(0)
 	}
