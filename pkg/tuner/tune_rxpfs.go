@@ -33,19 +33,19 @@ func (t *Tuner) DisableRPSRFSXPS(eths []*nic.NIC) (err error) {
 	for _, eth := range eths {
 		if q := eth.Queue; q != nil {
 			for i := 0; i < int(q.CombinedCount); i++ {
-				err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/rx-%d/rps_cpus", eth.Name, i), "0"))
+				err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/rx-%d/rps_cpus", eth.Name, i), util.BitMask(false, 0)))
 				err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/rx-%d/rps_flow_cnt", eth.Name, i), "0"))
-				// err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/tx-%d/xps_cpus", eth.Name, i), "0"))
+				// err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/tx-%d/xps_cpus", eth.Name, i), util.BitMask(false, 0)))
 				if t.kernelSupportXPSRXQS() {
 					err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/tx-%d/xps_rxqs", eth.Name, i), util.BitMask(false, int(q.CombinedCount))))
 				}
 			}
 			for i := 0; i < int(q.RxCount); i++ {
-				err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/rx-%d/rps_cpus", eth.Name, i), "0"))
+				err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/rx-%d/rps_cpus", eth.Name, i), util.BitMask(false, 0)))
 				err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/rx-%d/rps_flow_cnt", eth.Name, i), "0"))
 			}
 			for i := 0; i < int(q.TxCount); i++ {
-				// err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/tx-%d/xps_cpus", eth.Name, i), "0"))
+				// err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/tx-%d/xps_cpus", eth.Name, i), util.BitMask(false, 0)))
 				if t.kernelSupportXPSRXQS() {
 					err = errors.Join(err, config.Write(fmt.Sprintf("/sys/class/net/%s/queues/tx-%d/xps_rxqs", eth.Name, i), util.BitMask(false, int(q.TxCount))))
 				}
