@@ -63,7 +63,7 @@ func (p *StaticPolicy) apply() (err error) {
 	}
 
 	// disable RPS RFS aRFS XPS
-	if err = p.tuner.DisableRPSRFSXPS(p.nics); err != nil {
+	if err = p.tuner.DisableRPSRFSXPS(p.nics, p.cpus); err != nil {
 		klog.ErrorS(err, "failed to disable RPS RFS aRFS XPS", "nic", p.nics)
 		return
 	}
