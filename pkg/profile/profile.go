@@ -95,7 +95,7 @@ func (p *Profile) Run() (err error) {
 	switch p.board.ChassisVendor {
 	case "Red Hat":
 		err = p.SetupKVM()
-	case "AlibabaCloud", "Alibaba Cloud":
+	case "Alibaba", "AlibabaCloud", "Alibaba Cloud":
 		switch p.board.BIOSVendor {
 		case "SeaBIOS":
 			err = p.SetupECS()
