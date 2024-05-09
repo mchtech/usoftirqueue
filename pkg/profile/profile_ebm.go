@@ -29,17 +29,18 @@ func (p *Profile) SetupEBM() (err error) {
 
 	numCPU := p.cpus.NumCPU()
 
-	// no standard cores: 12c / 24c / 96c / 104c / 192c ... : numCPU != numIRQ
-	if numCPU&(numCPU-1) != 0 {
-		klog.Info("num cpu != 2^n, so numIRQ != numCPU: use steering(cloud_k8s_eni)")
-		return p.policies[policy.Steering](
-			// option.WithCPUSelectStrategy(option.CPUSelectStrategyScatter), // default
-			// option.WithCPUSelectMask(option.CPUSelectMaskAll),             // default
-			option.WithTrafficSource(option.TrafficSourceCloudK8sENI),
-		).Apply()
-	}
-
 	if len(p.nics) > 2 {
+
+		// no 2^n cores: 12c / 24c / 96c / 104c / 152c / 192c / 384c ... : numCPU != numIRQ
+		if numCPU&(numCPU-1) != 0 {
+			klog.Info("num nic > 2 and num cpu != 2^n, so numIRQ != numCPU: use steering(cpu_roundrobin, cloud_k8s_eni)")
+			return p.policies[policy.Steering](
+				option.WithCPUSelectStrategy(option.CPUSelectStrategyRoundRobin),
+				// option.WithCPUSelectMask(option.CPUSelectMaskAll),             // default
+				option.WithTrafficSource(option.TrafficSourceCloudK8sENI),
+			).Apply()
+		}
+
 		klog.Info("num nic > 2, use steering(cloud_k8s_eni)")
 		return p.policies[policy.Steering](
 			// option.WithCPUSelectStrategy(option.CPUSelectStrategyScatter), // default
@@ -47,6 +48,17 @@ func (p *Profile) SetupEBM() (err error) {
 			option.WithTrafficSource(option.TrafficSourceCloudK8sENI),
 		).Apply()
 	} else {
+
+		// no 2^n cores: 12c / 24c / 96c / 104c / 152c / 192c / 384c ... : numCPU != numIRQ
+		if numCPU&(numCPU-1) != 0 {
+			klog.Info("num nic ≤ 2 and num cpu != 2^n, so numIRQ != numCPU: use steering(cpu_roundrobin, cpu_local, cloud_k8s_eni)")
+			return p.policies[policy.Steering](
+				option.WithCPUSelectStrategy(option.CPUSelectStrategyRoundRobin),
+				option.WithCPUSelectMask(option.CPUSelectMaskLocalNUMA),
+				option.WithTrafficSource(option.TrafficSourceCloudK8sENI),
+			).Apply()
+		}
+
 		klog.Info("num nic ≤ 2, use steering(cpu_local, cloud_k8s_eni)")
 		return p.policies[policy.Steering](
 			// option.WithCPUSelectStrategy(option.CPUSelectStrategyScatter), // default
