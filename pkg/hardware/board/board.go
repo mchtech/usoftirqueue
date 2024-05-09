@@ -10,13 +10,14 @@ import (
 
 type BoardInfo struct {
 	ChassisVendor string `json:"chassis"`
+	ChassisTag    string `json:"tag"`
 	ProductName   string `json:"product"`
 	BIOSVendor    string `json:"bios"`
 }
 
 func Collect() (boardInfo *BoardInfo, err error) {
 	bi := &BoardInfo{}
-	if bi.ChassisVendor, err = getChassisVendor(); err != nil {
+	if bi.ChassisVendor, bi.ChassisTag, err = getChassisVendor(); err != nil {
 		return
 	}
 	if bi.ProductName, err = getProductName(); err != nil {
@@ -30,13 +31,13 @@ func Collect() (boardInfo *BoardInfo, err error) {
 }
 
 // 获取机器厂商
-func getChassisVendor() (chassis string, err error) {
+func getChassisVendor() (chassis, tag string, err error) {
 	chassises, err := ghw.Chassis(option.WithNullAlerter(), option.WithDisableTools())
 	if err != nil {
 		return
 	}
 	klog.V(4).InfoS("get chassis", "chassis", chassises.YAMLString())
-	return strings.TrimSpace(chassises.Vendor), err
+	return strings.TrimSpace(chassises.Vendor), strings.TrimSpace(chassises.AssetTag), err
 }
 
 func getProductName() (product string, err error) {
