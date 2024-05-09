@@ -1,6 +1,6 @@
 module usoftirqueue
 
-go 1.20
+go 1.21
 
 require (
 	github.com/coreos/go-systemd/v22 v22.5.0
@@ -15,11 +15,11 @@ require (
 	github.com/StackExchange/wmi v1.2.1 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect
-	github.com/go-ole/go-ole v1.2.6 // indirect
-	github.com/godbus/dbus/v5 v5.0.4 // indirect
+	github.com/go-ole/go-ole v1.3.0 // indirect
+	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/jaypipes/pcidb v1.0.0 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
-	golang.org/x/sys v0.13.0 // indirect
-	howett.net/plist v1.0.0 // indirect
+	golang.org/x/sys v0.20.0 // indirect
+	howett.net/plist v1.0.1 // indirect
 )

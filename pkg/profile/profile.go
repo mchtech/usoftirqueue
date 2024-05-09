@@ -53,7 +53,7 @@ func New(nicRegex string, largeNodeThresh, expectConnections int, userPolicy pol
 		klog.ErrorS(err, "failed to get board info")
 		return
 	}
-	klog.InfoS("board info", "chassis", bi.ChassisVendor, "product", bi.ProductName, "bios", bi.BIOSVendor)
+	klog.InfoS("board info", "chassis", bi.ChassisVendor, "tag", bi.ChassisTag, "product", bi.ProductName, "bios", bi.BIOSVendor)
 
 	// init profile
 	p = &Profile{
@@ -109,6 +109,21 @@ func (p *Profile) Run() (err error) {
 		default:
 			err = p.SetupEBM()
 		}
+	case "":
+		switch p.board.ChassisTag {
+		case "HUAWEICLOUD":
+			switch p.board.BIOSVendor {
+			case "SeaBIOS":
+				err = p.SetupECS()
+			default:
+				err = p.SetupEBM()
+			}
+		default:
+			klog.InfoS("unknown chassis", "vendor", p.board)
+			err = p.SetupBM()
+		}
+	case "XFUSION":
+		err = p.SetupEBM()
 	case "Amazon EC2":
 		err = p.SetupECS()
 	default:
