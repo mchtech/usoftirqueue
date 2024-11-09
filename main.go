@@ -102,7 +102,7 @@ func main() {
 └───────────────┴───────────────────────────────────────────┘
 `)
 	flag.StringVar(&nicRegex, "option.nic-filter", nicRegex, "filter nic name by regexp")
-	flag.Var(&queueIRQRegexes, "option.irq-filter", "filter nic rx/tx queue irq name by regexp (can be specified multiple times)\nformat: <driver>:<regexp>\n"+formatter.NewTableFromMap(nic.GetNICQueueIRQFilter(), []string{"driver", "regexp"}).String())
+	flag.Var(&queueIRQRegexes, "option.irq-filter", "filter nic rx/tx queue irq name by regexp (can be specified multiple times)\nformat: <driver>:<regexp> (regexp: first group used as IRQ input/ouput prefix)\n"+formatter.NewTableFromMap(nic.GetNICQueueIRQFilter(), []string{"driver", "regexp"}).String())
 	flag.IntVar(&largeNodeThresh, "option.large-node-threshold", largeNodeThresh, "machine is considered as a large node (prefer steering policy), if cpu core count >")
 	flag.IntVar(&expectConnections, "option.expect-connections", expectConnections, "required for RFS: estimated max concurrent connections that the node can process\n"+formatter.NewTableFromMap(policy.CoreToConnections, []string{"cpu", "connections"}).String())
 	flag.IntVar(&policy.BaseConnectionsPerCore, "option.connections-per-core", policy.BaseConnectionsPerCore, "required for RFS: connections per cpu core (only valid when num-cpu does not exist in `num-cpu:connections` map)")
