@@ -6,6 +6,7 @@ import (
 	"net"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 	"usoftirqueue/pkg/hardware/irq"
 	"usoftirqueue/pkg/util/formatter"
@@ -185,6 +186,12 @@ func (n *NIC) getIRQs() (irqs irq.IRQList) {
 			irqs = append(irqs, irq)
 		}
 	}
+
+	// sort by irq number
+	sort.Slice(irqs, func(i, j int) bool {
+		return irqs[i].Number < irqs[j].Number
+	})
+
 	klog.InfoS("filter TX/RX IRQs", "nic", n.Name, "driver", n.Driver, "bus", strings.ReplaceAll(n.Device, "/sys/devices/", ""), "count", len(irqs), "irqs", irqs.Numbers())
 	return
 }
