@@ -16,11 +16,11 @@ import (
 )
 
 var nicQueueIRQFilter = map[string]*regexp.Regexp{
-	"i40e":       regexp.MustCompile(`i40e-eth[0-9]+-TxRx-[0-9]+`),
-	"mlx4_core":  regexp.MustCompile(`mlx4_comp[0-9]+@pci:.+`),
-	"mlx5_core":  regexp.MustCompile(`mlx5_comp[0-9]+@pci:.+`),
-	"virtio_net": regexp.MustCompile(`virtio[0-9]+-(in|out)put[.][0-9]+`),
-	"ena":        regexp.MustCompile(`eth[0-9]+-Tx-Rx-[0-9]+`),
+	"i40e":       regexp.MustCompile(`(i40e-eth[0-9]+-TxRx)-[0-9]+`),
+	"mlx4_core":  regexp.MustCompile(`(mlx4_comp)[0-9]+@pci:.+`),
+	"mlx5_core":  regexp.MustCompile(`(mlx5_comp)[0-9]+@pci:.+`),
+	"virtio_net": regexp.MustCompile(`(virtio[0-9]+-(in|out)put)[.][0-9]+`),
+	"ena":        regexp.MustCompile(`(eth[0-9]+-Tx-Rx)-[0-9]+`),
 }
 
 func RegisterNICQueueIRQFilter(driverQueueIRQRegexes []string) (err error) {
@@ -169,20 +169,13 @@ func (n *NIC) getIRQs() (irqs irq.IRQList) {
 
 	// get irq info
 	for _, irqNum := range irqNums {
-		irq, err := irq.New(irqNum)
+		irq, err := irq.New(irqNum, filter)
 		if err != nil {
 			klog.ErrorS(err, "failed to get irq info", "nic", n.Name, "irq", irqNum)
 			continue
 		}
 		klog.V(4).InfoS("get irq info", "nic", n.Name, "irq", formatter.NewYAML(irq))
-		if filter != nil {
-			for _, name := range irq.Names {
-				if filter.MatchString(name) {
-					irqs = append(irqs, irq)
-					break
-				}
-			}
-		} else {
+		if irq.Name != "" {
 			irqs = append(irqs, irq)
 		}
 	}

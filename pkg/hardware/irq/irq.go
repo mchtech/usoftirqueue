@@ -3,6 +3,7 @@ package irq
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"usoftirqueue/pkg/util/config"
@@ -12,7 +13,7 @@ import (
 
 type IRQ struct {
 	Name     string
-	Names    []string
+	Prefix   string
 	Number   int
 	NUMAID   int
 	Affinity []int
@@ -27,12 +28,16 @@ func (l IRQList) Numbers() (q []int) {
 	return
 }
 
-func New(irq string) (IRQ, error) {
+func New(irq string, filter *regexp.Regexp) (IRQ, error) {
+
+	var (
+		name   string
+		prefix string
+	)
 
 	irqInt, _ := strconv.Atoi(irq)
 
 	// /proc/irq/$irq/
-	var names []string
 	f, err := os.Open(fmt.Sprintf("/proc/irq/%s/", irq))
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -40,15 +45,27 @@ func New(irq string) (IRQ, error) {
 		}
 		return IRQ{Number: irqInt}, err
 	}
-
 	defer f.Close()
+
+	// name
 	dirs, _ := f.ReadDir(-1)
 	for _, dir := range dirs {
-		if dir.IsDir() {
-			names = append(names, dir.Name())
+		if !dir.IsDir() {
+			continue
+		}
+		dn := dir.Name()
+		if filter == nil || filter.MatchString(dn) {
+			name = dn
+			break
 		}
 	}
-	// names, _ := filepath.Glob(fmt.Sprintf("/proc/irq/%s/*/", irq))
+
+	// prefix: virtio0-input.0 => virtio0-input
+	if filter != nil {
+		if matches := filter.FindStringSubmatch(name); len(matches) > 1 {
+			prefix = matches[1]
+		}
+	}
 
 	// /proc/irq/$irq/node
 	// -1 means no NUMA node
@@ -68,8 +85,8 @@ func New(irq string) (IRQ, error) {
 	}
 
 	return IRQ{
-		Name:     strings.Join(names, ","),
-		Names:    names,
+		Name:     name,
+		Prefix:   prefix,
 		Number:   irqInt,
 		NUMAID:   numa,
 		Affinity: affinityInt,

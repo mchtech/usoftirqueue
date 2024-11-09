@@ -3,6 +3,7 @@ package tuner
 import (
 	"context"
 	"fmt"
+	"sort"
 	"sync"
 	"usoftirqueue/pkg/hardware/cpu"
 	"usoftirqueue/pkg/hardware/nic"
@@ -26,6 +27,15 @@ func (t *Tuner) TuneIRQ(eth *nic.NIC, cpus *cpu.Topology, opt *option.Option) (e
 	irqs := eth.IRQs
 	numIRQ := len(irqs)
 	numCore := cpus.NumCPU()
+
+	if numCore*2 == numIRQ {
+		sort.Slice(irqs, func(i, j int) bool {
+			if irqs[i].Prefix == irqs[j].Prefix {
+				return irqs[i].Number < irqs[j].Number
+			}
+			return irqs[i].Prefix < irqs[j].Prefix
+		})
+	}
 
 	var numa int
 	switch opt.CPUSelectMask {
@@ -71,6 +81,7 @@ func (t *Tuner) TuneIRQ(eth *nic.NIC, cpus *cpu.Topology, opt *option.Option) (e
 			"driver", eth.Driver,
 			"irq", irqs[i].Number,
 			"name", irqs[i].Name,
+			"prefix", irqs[i].Prefix,
 			"affinity", fmt.Sprintf("%v -> %v", irqs[i].Affinity, []int{desiredAffinity[i]}),
 		)
 	}
