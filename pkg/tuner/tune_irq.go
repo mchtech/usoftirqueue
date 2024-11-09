@@ -28,7 +28,8 @@ func (t *Tuner) TuneIRQ(eth *nic.NIC, cpus *cpu.Topology, opt *option.Option) (e
 	numIRQ := len(irqs)
 	numCore := cpus.NumCPU()
 
-	if numCore*2 == numIRQ {
+	if q, r := numIRQ/numCore, numIRQ%numCore; r == 0 && q > 1 && q%2 == 0 {
+		klog.Warningln("sort irqs by input/ouput, then by irq number: count(IRQs) / count(cores) = even number")
 		sort.Slice(irqs, func(i, j int) bool {
 			if irqs[i].Prefix == irqs[j].Prefix {
 				return irqs[i].Number < irqs[j].Number
