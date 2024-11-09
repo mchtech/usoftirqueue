@@ -16,9 +16,9 @@ func (t *Tuner) TuneNICRingBufferMax(eth *nic.NIC) error {
 
 	klog.InfoS("tune NIC ring buffer", "nic", eth.Name,
 		"RxJumbo", fmt.Sprintf("%d -> %d", r.RxJumboPending, r.RxJumboMaxPending),
-		"RxMini", fmt.Sprintf("%d -> %d", r.RxMiniPending, r.RxMiniPending),
-		"Tx", fmt.Sprintf("%d -> %d", r.TxPending, r.TxPending),
-		"Rx", fmt.Sprintf("%d -> %d", r.RxPending, r.RxPending),
+		"RxMini", fmt.Sprintf("%d -> %d", r.RxMiniPending, r.RxMiniMaxPending),
+		"Tx", fmt.Sprintf("%d -> %d", r.TxPending, r.TxMaxPending),
+		"Rx", fmt.Sprintf("%d -> %d", r.RxPending, r.RxMaxPending),
 	)
 
 	// tune NIC ring
