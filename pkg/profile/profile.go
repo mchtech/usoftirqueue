@@ -97,7 +97,7 @@ func (p *Profile) Run() (err error) {
 		err = p.SetupKVM()
 	case "Alibaba", "AlibabaCloud", "Alibaba Cloud":
 		switch p.board.BIOSVendor {
-		case "SeaBIOS":
+		case "SeaBIOS", "EFI Development Kit II / OVMF":
 			err = p.SetupECS()
 		default:
 			err = p.SetupEBM()
