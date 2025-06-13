@@ -93,7 +93,7 @@ func (p *Profile) Run() (err error) {
 
 	// apply auto-detect policy
 	switch p.board.ChassisVendor {
-	case "Red Hat":
+	case "Red Hat", "QEMU":
 		err = p.SetupKVM()
 	case "Alibaba", "AlibabaCloud", "Alibaba Cloud":
 		switch p.board.BIOSVendor {
