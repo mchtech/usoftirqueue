@@ -28,6 +28,15 @@ func (l IRQList) Numbers() (q []int) {
 	return
 }
 
+func IRQsReady(irqs []string) bool {
+	for _, irq := range irqs {
+		if _, err := os.Stat(fmt.Sprintf("/proc/irq/%s/", irq)); err != nil {
+			return false
+		}
+	}
+	return true
+}
+
 func New(irq string, filter *regexp.Regexp) (IRQ, error) {
 
 	var (

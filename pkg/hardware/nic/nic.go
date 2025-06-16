@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 	"usoftirqueue/pkg/hardware/irq"
 	"usoftirqueue/pkg/util/formatter"
 
@@ -166,6 +167,15 @@ func (n *NIC) getIRQs() (irqs irq.IRQList) {
 		irqNums = append(irqNums, filepath.Base(p))
 	}
 	klog.V(4).InfoS("get irq numbers", "nic", n.Name, "irqs", irqNums)
+
+	// wait device ready
+	for i := 0; i < 5; i++ {
+		if irq.IRQsReady(irqNums) {
+			break
+		}
+		klog.InfoS("wait device ready", "nic", n.Name, "retry", i+1)
+		time.Sleep(time.Second)
+	}
 
 	// get irq info
 	for _, irqNum := range irqNums {
