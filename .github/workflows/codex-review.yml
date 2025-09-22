@@ -130,7 +130,7 @@ jobs:
           \`\`\`markdown
           # Findings
 
-          ## P[<int 0-3, optional>] <≤ Title: 80 chars, imperative>
+          ## P<int 0-3, optional>: <≤ Title: 80 chars, imperative>
 
           <valid Markdown explaining *why* this is a problem; cite files/lines/functions>
 
