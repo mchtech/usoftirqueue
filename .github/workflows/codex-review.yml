@@ -32,15 +32,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2. Cache npm global tools
-      - name: Cache npm global tools
-        uses: actions/cache@v3
-        with:
-          path: /home/runner/.npm-global
-          key: ${{ runner.os }}-npm-tools-${{ hashFiles('**/package.json') }}
-          restore-keys: |
-            ${{ runner.os }}-npm-tools-v20250922
-
       # 3. Install Node.js and Codex CLI
       - name: Set up Node.js
         uses: actions/setup-node@v3
@@ -49,10 +40,9 @@ jobs:
 
       - name: Install Codex CLI
         run: |
-          mkdir -pv ~/.npm-global
+          ls -l ~/.npm/
           npm install -g @openai/codex
-          which codex
-          ls -l ~/.npm-global
+          ls -l ~/.npm/
 
       # 4. Review the commit using Codex
       - name: Run Codex Review on Commit
