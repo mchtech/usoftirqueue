@@ -50,6 +50,7 @@ jobs:
       - name: Install Codex CLI
         run: |
           npm install -g @openai/codex
+          ls -l ~/.npm-global
 
       # 4. Review the commit using Codex
       - name: Run Codex Review on Commit
