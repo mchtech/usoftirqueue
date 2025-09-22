@@ -55,8 +55,10 @@ jobs:
           echo "PR_NUMBER=$PR_NUMBER" >> $GITHUB_ENV
 
           # GH_TOKEN="${{ secrets.GITHUB_TOKEN }}" gh pr diff $PR_NUMBER --repo ${{ github.repository }} >/tmp/pr.diff
-          curl -f -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" -o /tmp/pr_diff.json \
-            "https://api.github.com/repos/${{ github.repository_owner }}/${{ github.event.repository.name }}/pulls/${PR_NUMBER}/files"
+
+          curl -f -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" -H "Accept: application/vnd.github.v3.patch" -o /tmp/pr_diff.patch \
+            "https://api.github.com/repos/${{ github.repository_owner }}/${{ github.event.repository.name }}/pulls/${PR_NUMBER}"
+
           curl -f -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" -o /tmp/pr_info.json \
             "https://api.github.com/repos/${{ github.repository_owner }}/${{ github.event.repository.name }}/pulls/${PR_NUMBER}"
 
@@ -65,8 +67,8 @@ jobs:
 
           You are acting as a reviewer for a proposed code change made by another engineer.
 
-          You must read full file of /tmp/pr_diff.json to get all changes of this PR.
-          
+          You must read full file of /tmp/pr_diff.patch to get all changes of this PR.
+
           You must read full file of /tmp/pr_info.json to get repo name (head.repo.full_name) and commit hash (head.sha).
 
           You are running in github action env. do not run git command to pull latest code.
