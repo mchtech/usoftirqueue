@@ -30,7 +30,7 @@ jobs:
           # 获取当前 commit 的哈希值
           COMMIT_HASH=$(git rev-parse HEAD)
           # 运行 codex review 命令进行审查
-          review_output=$(codex /review --commit $COMMIT_HASH)
+          review_output=$(codex /review)
           echo "Codex Review Output: $review_output"
 
       # 4. 将审查结果评论回 PR（如果 PR 存在）
