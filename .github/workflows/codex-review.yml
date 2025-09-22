@@ -64,8 +64,8 @@ jobs:
           # Review guidelines:
 
           You are acting as a reviewer for a proposed code change made by another engineer.
-
-          output result to /tmp/review.md. You can read /tmp/pr_diff.json to get changes of this PR. repo name (head.repo.full_name) and commit hash (head.sha) can got from /tmp/pr_diff.json.
+          
+          You must read full file of /tmp/pr_diff.json to get all changes of this PR. repo name (head.repo.full_name) and commit hash (head.sha) can get from /tmp/pr_diff.json.
 
           You are running in github action env. do not run git command to pull latest code.
 
@@ -123,6 +123,9 @@ jobs:
           FORMATTING GUIDELINES:
           The finding description should be one paragraph.
 
+          OUTPUT FILE:
+          /tmp/review.md
+
           OUTPUT FORMAT:
 
           ## Output schema  — MUST MATCH *exactly*
@@ -157,7 +160,7 @@ jobs:
 
           mkdir -pv ~/.codex/
           echo "$CODEX_AUTH_JSON" >> ~/.codex/auth.json
-          # codex exec --full-auto --model gpt-5 "/review current changes and output result to /tmp/review.md. You can read /tmp/pr.diff to get changes of this PR"
+          # codex exec --full-auto --model gpt-5-codex "/review current changes and output result to /tmp/review.md. You can read /tmp/pr.diff to get changes of this PR"
           codex exec --full-auto --model gpt-5 "$PROMPT"
           echo "✅ RESULT: $(cat /tmp/review.md)"
 
