@@ -40,9 +40,9 @@ jobs:
       - name: Comment on Pull Request
         run: |
           # 获取当前 PR 的信息
-          PR_NUMBER=$(curl -s https://api.github.com/repos/${{ github.repository }}/commits/${COMMIT_HASH} | jq -r '.parents[0].sha')
+          PR_NUMBER=$(curl -v https://api.github.com/repos/${{ github.repository }}/commits/${COMMIT_HASH} | jq -r '.parents[0].sha')
           # 评论审查结果
-          curl -X POST -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          curl -v -X POST -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -d '{"body": "Codex Review Result:\n'${review_output}'"}' \
             https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments
         # if: github.event.pull_request != null
