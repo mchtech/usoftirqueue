@@ -49,7 +49,7 @@ jobs:
 
       - name: Install Codex CLI
         run: |
-          npm config list
+          mkdir -pv ~/.npm-global
           npm install -g @openai/codex
           ls -l ~/.npm-global
 
