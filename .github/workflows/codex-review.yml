@@ -136,7 +136,7 @@ jobs:
 
           - **Confidence Score**: <float 0.0-1.0>
           - **Code Location**:
-            - **Absolute File Path**: https://github.com/<repo name>/blob/<commit hash>/file path#L<Start line>-L<End line>>
+            - https://github.com/<repo name>/blob/<commit hash>/file path#L<start line>-L<end line>
 
           ---
 
