@@ -35,7 +35,7 @@ jobs:
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer $OPENAI_API_KEY" \
             -d '{
-              "model": "text-davinci-003",
+              "model": "gpt5",
               "prompt": "Hello, world!",
               "max_tokens": 5
             }'
