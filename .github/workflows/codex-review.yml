@@ -29,6 +29,7 @@ jobs:
         run: |
           pwd
           ls -l
+          which codex
           codex /review
 
           # # 获取当前 commit 的哈希值
