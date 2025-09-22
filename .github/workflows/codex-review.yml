@@ -31,7 +31,7 @@ jobs:
         run: |
           env
           touch review.md
-          codex exec --full-auto "/review output to ./review.md"
+          codex exec --full-auto "/review"
 
           # # 获取当前 commit 的哈希值
           # COMMIT_HASH=$(git rev-parse HEAD)
