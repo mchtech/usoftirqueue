@@ -45,4 +45,4 @@ jobs:
           curl -X POST -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -d '{"body": "Codex Review Result:\n'${review_output}'"}' \
             https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments
-        if: github.event.pull_request != null
+        # if: github.event.pull_request != null
