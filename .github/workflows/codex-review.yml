@@ -51,6 +51,7 @@ jobs:
         run: |
           mkdir -pv ~/.npm-global
           npm install -g @openai/codex
+          which codex
           ls -l ~/.npm-global
 
       # 4. Review the commit using Codex
