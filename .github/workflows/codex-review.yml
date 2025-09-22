@@ -32,7 +32,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 3. Install Node.js and Codex CLI
+      # 2. Install Node.js and Codex CLI
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
@@ -40,11 +40,9 @@ jobs:
 
       - name: Install Codex CLI
         run: |
-          ls -l ~/.npm/
           npm install -g @openai/codex
-          ls -l ~/.npm/
 
-      # 4. Review the commit using Codex
+      # 3. Review the commit using Codex
       - name: Run Codex Review on Commit
         env:
           CODEX_AUTH_JSON: ${{ secrets.CODEX_AUTH_JSON }}
@@ -65,7 +63,7 @@ jobs:
           codex exec --full-auto --model gpt-5-codex "/review PR diff (./pr_diff.json) and output result to ./review.md"
           echo "✅ RESULT: $(cat review.md)"
 
-      # 5. comment to PR
+      # 4. comment to PR
       - name: Comment on Pull Request with Review Output
         uses: actions/github-script@v6
         with:
