@@ -28,7 +28,7 @@ jobs:
       - name: Run Codex Review on Commit
         run: |
           touch review.md
-          codex exec "/review output to review.md"
+          codex exec --full-auto "/review output to ./review.md"
 
           # # 获取当前 commit 的哈希值
           # COMMIT_HASH=$(git rev-parse HEAD)
