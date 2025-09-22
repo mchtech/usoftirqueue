@@ -32,7 +32,7 @@ jobs:
           mkdir -pv ~/.codex/
           echo "$CODEX_AUTH_JSON" >> ~/.codex/auth.json
           # codex exec --full-auto --model gpt-5-codex "/review git commit and output to review.md"
-          codex exec --full-auto --model gpt-5-codex "hello"
+          codex exec --full-auto --model gpt-5-codex "hello: outupt to review.md"
           ls -l review.md
           review_output=$(cat review.md)
 
