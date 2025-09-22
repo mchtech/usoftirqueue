@@ -60,8 +60,9 @@ jobs:
 
           mkdir -pv ~/.codex/
           echo "$CODEX_AUTH_JSON" >> ~/.codex/auth.json
-          codex exec --full-auto --model gpt-5-codex "/review current changes and output result to ./review.md. You can read /tmp/pr_diff.json to get changes of this PR"
-          echo "✅ RESULT: $(cat review.md)"
+          # codex exec --full-auto --model gpt-5-codex "/review current changes and output result to ./review.md. You can read /tmp/pr_diff.json to get changes of this PR"
+          codex exec --full-auto --model gpt-5-codex "/review current changes (headref=${{ github.head_ref }}, baseref=${{ github.base_ref }}) and output result to /tmp/review.md"
+          echo "✅ RESULT: $(cat /tmp/review.md)"
 
       # 4. comment to PR
       - name: Comment on Pull Request with Review Output
@@ -69,7 +70,7 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const reviewContent = fs.readFileSync('review.md', 'utf8');
+            const reviewContent = fs.readFileSync('/tmp/review.md', 'utf8');
 
             await github.rest.issues.createComment({
               issue_number: ${{ env.PR_NUMBER }},
