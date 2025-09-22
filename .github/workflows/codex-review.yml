@@ -32,7 +32,8 @@ jobs:
           mkdir -pv ~/.codex/
           echo "$CODEX_AUTH_JSON" >> ~/.codex/auth.json
           touch review.md
-          codex exec --full-auto "/review"
+          codex exec --full-auto --model gpt-5-codex "/review git commit and output to review.md"
+          cat review.md
 
       # 4. 将审查结果评论回 PR（如果 PR 存在）
       - name: Comment on Pull Request
