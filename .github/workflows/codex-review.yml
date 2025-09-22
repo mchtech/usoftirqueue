@@ -1,0 +1,45 @@
+name: Codex Review Commit
+
+on:
+  push:
+    branches:
+      - main # 只针对 main 分支，也可以改成其他分支名
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout the code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Install Node.js and Codex CLI
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "22"
+
+      - name: Install Codex CLI
+        run: |
+          npm install -g @openai/codex
+
+      # 3. Review the commit using Codex
+      - name: Run Codex Review on Commit
+        run: |
+          # 获取当前 commit 的哈希值
+          COMMIT_HASH=$(git rev-parse HEAD)
+          # 运行 codex review 命令进行审查
+          review_output=$(codex /review --commit $COMMIT_HASH)
+          echo "Codex Review Output: $review_output"
+
+      # 4. 将审查结果评论回 PR（如果 PR 存在）
+      - name: Comment on Pull Request
+        run: |
+          # 获取当前 PR 的信息
+          PR_NUMBER=$(curl -s https://api.github.com/repos/${{ github.repository }}/commits/${COMMIT_HASH} | jq -r '.parents[0].sha')
+          # 评论审查结果
+          curl -X POST -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -d '{"body": "Codex Review Result:\n'${review_output}'"}' \
+            https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments
+        if: github.event.pull_request != null
