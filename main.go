@@ -151,7 +151,6 @@ func main() {
 	if err = p.Run(); err != nil {
 		klog.ErrorS(err, "failed to optimize NIC")
 		os.Exit(255)
-		os.Exit(254)
 		return
 	}
 	klog.InfoS("NIC optimization finished")
