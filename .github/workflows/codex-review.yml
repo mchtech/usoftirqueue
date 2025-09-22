@@ -61,7 +61,9 @@ jobs:
 
           You are acting as a reviewer for a proposed code change made by another engineer.
 
-          output result to /tmp/review.md. You can read /tmp/pr.diff to get changes of this PR.
+          output result to /tmp/review.md. You can read /tmp/pr.diff to get changes of this PR. commit hash can got from /tmp/pr.diff.
+
+          You are running in github action env. do not run git command to pull latest code.
 
           Below are some default guidelines for determining whether the original author would appreciate the issue being flagged.
 
@@ -130,7 +132,7 @@ jobs:
 
           - **Confidence Score**: <float 0.0-1.0>
           - **Code Location**:
-            - **Absolute File Path**: https://github.com/<repository>/blob/<commit>/file path#L<Start line>-L<End line>>
+            - **Absolute File Path**: https://github.com/<repository>/blob/<commit hash>/file path#L<Start line>-L<End line>>
 
           ---
 
