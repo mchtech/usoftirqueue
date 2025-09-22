@@ -65,11 +65,11 @@ jobs:
 
           You are acting as a reviewer for a proposed code change made by another engineer.
 
-          You must read **full file** of /tmp/pr_diff.json to get **all changes** of this PR.
+          You must read full file of /tmp/pr_diff.json to get all changes of this PR.
+          
+          You must read full file of /tmp/pr_info.json to get repo name (head.repo.full_name) and commit hash (head.sha).
 
-          You must read **full file** of /tmp/pr_info.json to get repo name (head.repo.full_name) and commit hash (head.sha) and other metadatas of this PR.
-
-          You are running in github action environment. **Do not** run git command to pull latest code or switch to other branches.
+          You are running in github action env. do not run git command to pull latest code.
 
           Below are some default guidelines for determining whether the original author would appreciate the issue being flagged.
 
