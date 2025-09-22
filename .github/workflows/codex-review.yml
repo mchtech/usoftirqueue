@@ -29,6 +29,7 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
+          env
           touch review.md
           codex exec --full-auto "/review output to ./review.md"
 
