@@ -27,11 +27,12 @@ jobs:
       # 3. Review the commit using Codex
       - name: Run Codex Review on Commit
         run: |
-          # 获取当前 commit 的哈希值
-          COMMIT_HASH=$(git rev-parse HEAD)
-          # 运行 codex review 命令进行审查
-          review_output=$(codex /review)
-          echo "Codex Review Output: $review_output"
+          codex /review
+          # # 获取当前 commit 的哈希值
+          # COMMIT_HASH=$(git rev-parse HEAD)
+          # # 运行 codex review 命令进行审查
+          # review_output=$(codex /review)
+          # echo "Codex Review Output: $review_output"
 
       # 4. 将审查结果评论回 PR（如果 PR 存在）
       - name: Comment on Pull Request
