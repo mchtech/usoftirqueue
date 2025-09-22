@@ -47,30 +47,30 @@ jobs:
         env:
           CODEX_AUTH_JSON: ${{ secrets.CODEX_AUTH_JSON }}
         run: |
+          set -e -o pipefail
 
           PR_NUMBER="${{ github.event.pull_request.number }}"
-          if [ -z "$PR_NUMBER" ]; then
-            PR_NUMBER="${{ github.event.issue.number }}"
-          fi
+          [[ -z "$PR_NUMBER" ]] && PR_NUMBER="${{ github.event.issue.number }}"
+          [[ -z "$PR_NUMBER" ]] && echo "failed to get PR number" && exit 1
           echo "PR_NUMBER=$PR_NUMBER" >> $GITHUB_ENV
 
           # GH_TOKEN="${{ secrets.GITHUB_TOKEN }}" gh pr diff $PR_NUMBER --repo ${{ github.repository }} >/tmp/pr.diff
 
-          curl -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" -o /tmp/pr_diff.json \
+          curl -f -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" -o /tmp/pr_diff.json \
             "https://api.github.com/repos/${{ github.repository_owner }}/${{ github.event.repository.name }}/pulls/${PR_NUMBER}/files"
-          curl -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" -o /tmp/pr_info.json \
+          curl -f -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" -o /tmp/pr_info.json \
             "https://api.github.com/repos/${{ github.repository_owner }}/${{ github.event.repository.name }}/pulls/${PR_NUMBER}"
 
           PROMPT="
           # Review guidelines:
 
           You are acting as a reviewer for a proposed code change made by another engineer.
-          
-          You must read full file of /tmp/pr_diff.json to get all changes of this PR.
-          
-          You must read full file of /tmp/pr_info.json to get repo name (head.repo.full_name) and commit hash (head.sha).
 
-          You are running in github action env. do not run git command to pull latest code.
+          You must read **full file** of /tmp/pr_diff.json to get **all changes** of this PR.
+
+          You must read **full file** of /tmp/pr_info.json to get repo name (head.repo.full_name) and commit hash (head.sha) and other metadata (such as .title .body .base.sha) of this PR.
+
+          You are running in github action environment. **Do not** run git command to pull latest code or switch to other branches.
 
           Below are some default guidelines for determining whether the original author would appreciate the issue being flagged.
 
@@ -160,12 +160,14 @@ jobs:
           * Do not generate a PR fix.
           "
 
-
           mkdir -pv ~/.codex/
           echo "$CODEX_AUTH_JSON" >> ~/.codex/auth.json
           # codex exec --full-auto --model gpt-5-codex "/review current changes and output result to /tmp/review.md. You can read /tmp/pr.diff to get changes of this PR"
           codex exec --full-auto --model gpt-5 "$PROMPT"
-          echo "✅ RESULT: $(cat /tmp/review.md)"
+
+          echo "✅ RESULT BEGIN"
+          cat /tmp/review.md
+          echo "✅ RESULT END"
 
       # 4. comment to PR
       - name: Comment on Pull Request with Review Output
