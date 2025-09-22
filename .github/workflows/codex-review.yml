@@ -55,7 +55,6 @@ jobs:
           echo "PR_NUMBER=$PR_NUMBER" >> $GITHUB_ENV
 
           # GH_TOKEN="${{ secrets.GITHUB_TOKEN }}" gh pr diff $PR_NUMBER --repo ${{ github.repository }} >/tmp/pr.diff
-
           curl -f -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" -o /tmp/pr_diff.json \
             "https://api.github.com/repos/${{ github.repository_owner }}/${{ github.event.repository.name }}/pulls/${PR_NUMBER}/files"
           curl -f -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" -o /tmp/pr_info.json \
@@ -136,7 +135,7 @@ jobs:
           \`\`\`markdown
           # Findings
 
-          ## P<int 0-3, optional>: <≤ Title: 80 chars, imperative>
+          ## P<int 0-3, optional> <≤ Title: 80 chars, imperative>
 
           <valid Markdown explaining *why* this is a problem; cite files/lines/functions>
 
