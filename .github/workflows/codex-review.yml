@@ -39,7 +39,7 @@ jobs:
           path: ~/.npm-global
           key: ${{ runner.os }}-npm-tools-${{ hashFiles('**/package.json') }}
           restore-keys: |
-            ${{ runner.os }}-npm-tools-
+            ${{ runner.os }}-npm-tools-v20250922
 
       # 3. Install Node.js and Codex CLI
       - name: Set up Node.js
