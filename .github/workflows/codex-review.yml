@@ -67,21 +67,11 @@ jobs:
           curl -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -o /tmp/pr_diff.json \
             "https://api.github.com/repos/${{ github.repository_owner }}/${{ github.event.repository.name }}/pulls/${PR_NUMBER}/files"
-          
-          echo "✅"
-          git branch -v
-          echo "✅"
-          git diff origin/main..origin/test --stat
-          echo "✅"
-          git diff origin/main..pull/21/merge --stat
-          echo "✅"
-          git diff origin/test..pull/21/merge --stat
-          echo "✅"
 
           mkdir -pv ~/.codex/
           echo "$CODEX_AUTH_JSON" >> ~/.codex/auth.json
           # codex exec --full-auto --model gpt-5-codex "/review current changes and output result to ./review.md. You can read /tmp/pr_diff.json to get changes of this PR"
-          codex exec --full-auto --model gpt-5-codex "/review current changes (headref=${{ github.head_ref }}, baseref=${{ github.base_ref }}) and output result to /tmp/review.md"
+          codex exec --full-auto --model gpt-5-codex "/review current changes ( baseref=${{ github.base_ref }} currentref=pull/$PR_NUMBER/merge ) and output result to /tmp/review.md"
           echo "✅ RESULT: $(cat /tmp/review.md)"
 
       # 4. comment to PR
