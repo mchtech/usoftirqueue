@@ -29,16 +29,6 @@ jobs:
 
     steps:
       # 1. Checkout the code
-      - name: Checkout PR source branch
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref }}
-
-      - name: Checkout PR target branch
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.base_ref }}
-
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -68,12 +58,11 @@ jobs:
           #   -o /tmp/pr_diff.json \
           #   "https://api.github.com/repos/${{ github.repository_owner }}/${{ github.event.repository.name }}/pulls/${PR_NUMBER}/files"
 
-          GH_TOKEN="${{ secrets.GITHUB_TOKEN }}" gh pr diff $PR_NUMBER --repo mchtech/usoftirqueue
+          GH_TOKEN="${{ secrets.GITHUB_TOKEN }}" gh pr diff $PR_NUMBER --repo mchtech/usoftirqueue >/tmp/pr.diff
 
           mkdir -pv ~/.codex/
           echo "$CODEX_AUTH_JSON" >> ~/.codex/auth.json
-          # codex exec --full-auto --model gpt-5-codex "/review current changes and output result to ./review.md. You can read /tmp/pr_diff.json to get changes of this PR"
-          codex exec --full-auto --model gpt-5-codex "/review current changes ( baseref=${{ github.base_ref }} currentref=pull/$PR_NUMBER/merge ) and output result to /tmp/review.md"
+          codex exec --full-auto --model gpt-5-codex "/review current changes and output result to /tmp/review.md. You can read /tmp/pr.diff to get changes of this PR"
           echo "✅ RESULT: $(cat /tmp/review.md)"
 
       # 4. comment to PR
