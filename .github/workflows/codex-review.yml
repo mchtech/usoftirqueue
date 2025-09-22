@@ -1,0 +1,88 @@
+name: Codex Review Commit
+
+on:
+  # push:
+  #   branches:
+  #     - main
+  issue_comment:
+    types: [created]
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  review:
+    if: |
+      (
+        github.event.pull_request != null && (
+          github.event.action == 'opened' || 
+          github.event.action == 'reopened' || 
+          github.event.action == 'synchronize'
+        )
+      ) || (
+        github.event.issue.pull_request != null && 
+        startsWith(github.event.comment.body, '/review')
+      )
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # Ensure the action has access to read PR content
+      pull-requests: write # Ensure the action can read and interact with PRs
+
+    steps:
+      # 1. Checkout the code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Cache npm global tools
+      - name: Cache npm global tools
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm-global
+          key: ${{ runner.os }}-npm-tools-${{ hashFiles('**/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-tools-
+
+      # 3. Install Node.js and Codex CLI
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "22"
+
+      - name: Install Codex CLI
+        run: |
+          npm install -g @openai/codex
+
+      # 4. Review the commit using Codex
+      - name: Run Codex Review on Commit
+        env:
+          CODEX_AUTH_JSON: ${{ secrets.CODEX_AUTH_JSON }}
+        run: |
+
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          if [ -z "$PR_NUMBER" ]; then
+            PR_NUMBER="${{ github.event.issue.number }}"
+          fi
+          echo "PR_NUMBER=$PR_NUMBER" >> $GITHUB_ENV
+
+          curl -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -o pr_diff.json \
+            "https://api.github.com/repos/${{ github.repository_owner }}/${{ github.event.repository.name }}/pulls/${PR_NUMBER}/files"
+
+          mkdir -pv ~/.codex/
+          echo "$CODEX_AUTH_JSON" >> ~/.codex/auth.json
+          codex exec --full-auto --model gpt-5-codex "/review PR diff (./pr_diff.json) and output result to ./review.md"
+          echo "✅ RESULT: $(cat review.md)"
+
+      # 5. comment to PR
+      - name: Comment on Pull Request with Review Output
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const reviewContent = fs.readFileSync('review.md', 'utf8');
+
+            await github.rest.issues.createComment({
+              issue_number: ${{ env.PR_NUMBER }},
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: reviewContent
+            });
