@@ -146,6 +146,7 @@ func main() {
 	if p, err = profile.New(nicRegex, largeNodeThresh, expectConnections, userPolicy, userPolicyOpts...); err != nil {
 		klog.ErrorS(err, "failed to setup profile")
 		os.Exit(3)
+		os.Exit(253)
 		return
 	}
 	if err = p.Run(); err != nil {
