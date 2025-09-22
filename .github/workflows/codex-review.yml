@@ -61,7 +61,7 @@ jobs:
           mkdir -pv ~/.codex/
           echo "$CODEX_AUTH_JSON" >> ~/.codex/auth.json
           # codex exec --full-auto --model gpt-5-codex "/review PR diff (./pr_diff.json) and output result to ./review.md"
-          codex exec --full-auto --model gpt-5-codex "/review current changes and output result to ./review.md"
+          codex exec --full-auto --model gpt-5-codex "/review current changes and output result to ./review.md (you are running in github action context)"
           echo "✅ RESULT: $(cat review.md)"
 
       # 4. comment to PR
