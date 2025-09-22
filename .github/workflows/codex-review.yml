@@ -7,6 +7,7 @@ on:
 
 jobs:
   review:
+    if: github.event.issue.pull_request != '' && contains(github.event.comment.body, '/review')
     runs-on: ubuntu-latest
 
     steps:
@@ -29,6 +30,7 @@ jobs:
         env:
           CODEX_AUTH_JSON: ${{ secrets.CODEX_AUTH_JSON }}
         run: |
+          COMMIT_HASH=$(git rev-parse HEAD)
           mkdir -pv ~/.codex/
           echo "$CODEX_AUTH_JSON" >> ~/.codex/auth.json
           # codex exec --full-auto --model gpt-5-codex "/review git commit and output to review.md"
@@ -46,4 +48,3 @@ jobs:
           curl -v -X POST -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -d '{"body": "Codex Review Result:\n'${review_output}'"}' \
             https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments
-        # if: github.event.pull_request != null
