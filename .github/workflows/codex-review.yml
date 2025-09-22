@@ -27,6 +27,7 @@ jobs:
       # 3. Review the commit using Codex
       - name: Run Codex Review on Commit
         run: |
+          find / -name codex
           codex /review
           # # 获取当前 commit 的哈希值
           # COMMIT_HASH=$(git rev-parse HEAD)
