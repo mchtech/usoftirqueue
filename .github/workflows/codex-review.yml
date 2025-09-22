@@ -29,7 +29,18 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
-          env
+          echo "Using OpenAI API Key in the command."
+          # 例如，如果你需要用 curl 调用 OpenAI API
+          curl -X POST https://api.openai.com/v1/completions \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $OPENAI_API_KEY" \
+            -d '{
+              "model": "text-davinci-003",
+              "prompt": "Hello, world!",
+              "max_tokens": 5
+            }'
+          
+          echo "review"
           touch review.md
           codex exec --full-auto "/review"
 
