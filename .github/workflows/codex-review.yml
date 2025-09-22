@@ -39,6 +39,7 @@ jobs:
       # 4. 将审查结果评论回 PR（如果 PR 存在）
       - name: Comment on Pull Request
         run: |
+          env
           # 获取当前 PR 的信息
           PR_NUMBER=$(curl -v https://api.github.com/repos/${{ github.repository }}/commits/${COMMIT_HASH} | jq -r '.parents[0].sha')
           # 评论审查结果
