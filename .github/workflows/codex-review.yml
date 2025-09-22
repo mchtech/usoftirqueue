@@ -29,26 +29,8 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
-          echo "Using OpenAI API Key in the command."
-          # 例如，如果你需要用 curl 调用 OpenAI API
-          curl -X POST https://api.openai.com/v1/completions \
-            -H "Content-Type: application/json" \
-            -H "Authorization: Bearer $OPENAI_API_KEY" \
-            -d '{
-              "model": "gpt5",
-              "prompt": "Hello, world!",
-              "max_tokens": 5
-            }'
-          
-          echo "review"
           touch review.md
           codex exec --full-auto "/review"
-
-          # # 获取当前 commit 的哈希值
-          # COMMIT_HASH=$(git rev-parse HEAD)
-          # # 运行 codex review 命令进行审查
-          # review_output=$(codex /review)
-          # echo "Codex Review Output: $review_output"
 
       # 4. 将审查结果评论回 PR（如果 PR 存在）
       - name: Comment on Pull Request
