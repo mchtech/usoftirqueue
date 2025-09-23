@@ -162,8 +162,7 @@ jobs:
 
           # mkdir -pv ~/.codex/
           # echo "$CODEX_AUTH_JSON" >> ~/.codex/auth.json
-          export OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}"
-          echo "$OPENAI_API_KEY" | base64
+          codex login --api-key "${{ secrets.OPENAI_API_KEY }}"
           codex exec --full-auto --model gpt-5 "$PROMPT"
 
           echo "✅ RESULT BEGIN"
