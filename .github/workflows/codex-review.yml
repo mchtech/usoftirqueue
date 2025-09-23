@@ -32,19 +32,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
-        if: github.event.pull_request != null
-
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.issue.pull_request.head.sha }}
-        if: github.event.issue.pull_request != null
-
-      - name: TEST1
-        run: |
-          set -e -o pipefail
-          git branch --all --verbose
+          ref: ${{ github.event.pull_request.head.sha || github.event.issue.pull_request.head.sha }}
 
       # 2. Install Node.js and Codex CLI
       - name: Set up Node.js
@@ -69,6 +57,7 @@ jobs:
           [[ -z "$PR_NUMBER" ]] && PR_NUMBER="${{ github.event.issue.number }}"
           [[ -z "$PR_NUMBER" ]] && echo "failed to get PR number" && exit 1
           echo "PR_NUMBER=$PR_NUMBER" >> $GITHUB_ENV
+          echo "HEAD_SHA: ${{ github.event.pull_request.head.sha }} | ${{ github.event.issue.pull_request.head.sha }}"
 
           curl -f -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" -H "Accept: application/vnd.github.v3.diff" -o /tmp/pr_diff.diff \
             "https://api.github.com/repos/${{ github.repository_owner }}/${{ github.event.repository.name }}/pulls/${PR_NUMBER}"
