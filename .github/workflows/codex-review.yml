@@ -56,7 +56,7 @@ jobs:
 
           # GH_TOKEN="${{ secrets.GITHUB_TOKEN }}" gh pr diff $PR_NUMBER --repo ${{ github.repository }} >/tmp/pr.diff
 
-          curl -f -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" -H "Accept: application/vnd.github.v3.patch" -o /tmp/pr_diff.patch \
+          curl -f -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" -H "Accept: application/vnd.github.v3.diff" -o /tmp/pr_diff.diff \
             "https://api.github.com/repos/${{ github.repository_owner }}/${{ github.event.repository.name }}/pulls/${PR_NUMBER}"
 
           curl -f -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" -o /tmp/pr_info.json \
@@ -67,7 +67,7 @@ jobs:
 
           You are acting as a reviewer for a proposed code change made by another engineer.
 
-          You must read full file of /tmp/pr_diff.patch to get all changes of this PR.
+          You must read full file of /tmp/pr_diff.diff to get all changes of this PR.
 
           You must read full file of /tmp/pr_info.json to get repo name (head.repo.full_name) and commit hash (head.sha).
 
