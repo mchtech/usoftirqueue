@@ -50,7 +50,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: "refs/pull/${PR_NUMBER}/merge"
+          ref: "refs/pull/${PR_NUMBER}/head"
 
       - name: TEST2
         run: |
