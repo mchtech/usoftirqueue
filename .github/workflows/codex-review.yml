@@ -33,7 +33,6 @@ jobs:
         run: |
           set -e -o pipefail
 
-          git branch --all --verbose
           PR_NUMBER="${{ github.event.pull_request.number }}"
           [[ -z "$PR_NUMBER" ]] && PR_NUMBER="${{ github.event.issue.number }}"
           [[ -z "$PR_NUMBER" ]] && echo "failed to get PR number" && exit 1
@@ -43,10 +42,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: TEST1
+        run: |
+          set -e -o pipefail
+          git branch --all --verbose
+
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           ref: "refs/pull/${PR_NUMBER}/merge"
+
+      - name: TEST2
+        run: |
+          set -e -o pipefail
+          git branch --all --verbose
 
       # 2. Install Node.js and Codex CLI
       - name: Set up Node.js
