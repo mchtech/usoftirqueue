@@ -44,9 +44,6 @@ jobs:
 
       # 3. Review the commit using Codex
       - name: Run Codex Review on Commit
-        # env:
-        #   # CODEX_AUTH_JSON: ${{ secrets.CODEX_AUTH_JSON }}
-        #   OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           set -e -o pipefail
 
@@ -160,7 +157,7 @@ jobs:
           * Do not generate a PR fix.
           "
 
-          # mkdir -pv ~/.codex/
+          mkdir -pv ~/.codex/
           # echo "$CODEX_AUTH_JSON" >> ~/.codex/auth.json
           codex login --api-key "${{ secrets.OPENAI_API_KEY }}"
           codex exec --full-auto --model gpt-5 "$PROMPT"
