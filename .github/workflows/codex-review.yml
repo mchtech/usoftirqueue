@@ -46,8 +46,8 @@ jobs:
       # 1. Checkout the code
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          ref: ${{ env.PR_HEAD }}
+        # with:
+        #   ref: ${{ env.PR_HEAD }}
 
       # 2. Install Node.js and Codex CLI
       - name: Set up Node.js
