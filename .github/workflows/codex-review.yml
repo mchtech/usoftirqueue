@@ -28,11 +28,26 @@ jobs:
       pull-requests: write # Ensure the action can read and interact with PRs
 
     steps:
+      # 0. Get PR Number
+      - name: Get PR Number
+        run: |
+          set -e -o pipefail
+
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          [[ -z "$PR_NUMBER" ]] && PR_NUMBER="${{ github.event.issue.number }}"
+          [[ -z "$PR_NUMBER" ]] && echo "failed to get PR number" && exit 1
+
+          PR_HEAD=$(curl -s -f -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/pulls/${PR_NUMBER}" | jq -r '.head.ref')
+
+          echo "PR_NUMBER=$PR_NUMBER" >> $GITHUB_ENV
+          echo "PR_HEAD=$PR_HEAD" >> $GITHUB_ENV
+
       # 1. Checkout the code
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.event.issue.pull_request.head.sha }}
+          ref: ${{ env.PR_HEAD }}
 
       # 2. Install Node.js and Codex CLI
       - name: Set up Node.js
@@ -52,12 +67,6 @@ jobs:
           set -e -o pipefail
 
           git branch --all --verbose
-
-          PR_NUMBER="${{ github.event.pull_request.number }}"
-          [[ -z "$PR_NUMBER" ]] && PR_NUMBER="${{ github.event.issue.number }}"
-          [[ -z "$PR_NUMBER" ]] && echo "failed to get PR number" && exit 1
-          echo "PR_NUMBER=$PR_NUMBER" >> $GITHUB_ENV
-          echo "HEAD_SHA: ${{ github.event.pull_request.head.sha }} | ${{ github.event.issue.pull_request.head.sha }}"
 
           curl -f -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" -H "Accept: application/vnd.github.v3.diff" -o /tmp/pr_diff.diff \
             "https://api.github.com/repos/${{ github.repository_owner }}/${{ github.event.repository.name }}/pulls/${PR_NUMBER}"
