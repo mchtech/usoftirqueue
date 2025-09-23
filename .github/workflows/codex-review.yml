@@ -28,9 +28,25 @@ jobs:
       pull-requests: write # Ensure the action can read and interact with PRs
 
     steps:
+      # 0. Get PR Number
+      - name: Get PR Number
+        run: |
+          set -e -o pipefail
+
+          git branch --all --verbose
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          [[ -z "$PR_NUMBER" ]] && PR_NUMBER="${{ github.event.issue.number }}"
+          [[ -z "$PR_NUMBER" ]] && echo "failed to get PR number" && exit 1
+          echo "PR_NUMBER=$PR_NUMBER" >> $GITHUB_ENV
+
       # 1. Checkout the code
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: "refs/pull/${PR_NUMBER}/merge"
 
       # 2. Install Node.js and Codex CLI
       - name: Set up Node.js
@@ -48,13 +64,6 @@ jobs:
           CODEX_AUTH_JSON: ${{ secrets.CODEX_AUTH_JSON }}
         run: |
           set -e -o pipefail
-
-          PR_NUMBER="${{ github.event.pull_request.number }}"
-          [[ -z "$PR_NUMBER" ]] && PR_NUMBER="${{ github.event.issue.number }}"
-          [[ -z "$PR_NUMBER" ]] && echo "failed to get PR number" && exit 1
-          echo "PR_NUMBER=$PR_NUMBER" >> $GITHUB_ENV
-
-          # GH_TOKEN="${{ secrets.GITHUB_TOKEN }}" gh pr diff $PR_NUMBER --repo ${{ github.repository }} >/tmp/pr.diff
 
           git branch --all --verbose
 
@@ -165,7 +174,6 @@ jobs:
 
           mkdir -pv ~/.codex/
           echo "$CODEX_AUTH_JSON" >> ~/.codex/auth.json
-          # codex exec --full-auto --model gpt-5-codex "/review current changes and output result to /tmp/review.md. You can read /tmp/pr.diff to get changes of this PR"
           codex exec --full-auto --model gpt-5 "$PROMPT"
 
           echo "✅ RESULT BEGIN"
