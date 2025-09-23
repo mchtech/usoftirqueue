@@ -51,7 +51,7 @@ jobs:
 
           PR_NUMBER="${{ github.event.pull_request.number || github.event.issue.number }}"
           [[ -z "$PR_NUMBER" ]] && echo "failed to get PR number" && exit 1
-          echo "PR_NUMBER=$PR_NUMBER PR_HEAD=$PR_HEAD"
+          echo "PR_NUMBER=$PR_NUMBER"
           echo "PR_NUMBER=$PR_NUMBER" >> $GITHUB_ENV
 
           curl -f -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" -H "Accept: application/vnd.github.v3.diff" -o /tmp/pr_diff.diff \
