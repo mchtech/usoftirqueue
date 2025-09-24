@@ -154,7 +154,7 @@ jobs:
           * The code_location field is required and must include absolute_file_path and line_range.
           * Line ranges must be as short as possible for interpreting the issue (avoid ranges over 5–10 lines; pick the most suitable subrange).
           * The code_location should overlap with the diff.
-          * Do not generate a PR fix (suggestion blocks can be included in the result).
+          * Do not generate a PR fix.
           "
 
           mkdir -pv ~/.codex/
