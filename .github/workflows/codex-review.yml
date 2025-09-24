@@ -160,12 +160,12 @@ jobs:
           <valid Markdown explaining *why* this is a problem; cite files/lines/functions>
 
           - **Confidence Score**: <float 0.0-1.0>
-          <suggestion blocks>
+          <replacement code>
           \`\`\`
 
           IMPORTANT NOTES:
           - Each finding gets its own JSON file (1.json, 2.json, 3.json, etc.)
-          - The \"text\" field should contain the complete finding description in Finding format
+          - The \"text\" field should contain the complete finding description in Finding format, and escape to json string
           - Use \\\`\\\`\\\`suggestion blocks for concrete replacement code
           - \"line\" and \"startLine\" should be the same for single-line comments
           - \"path\" should be the relative file path from the repository root
@@ -202,7 +202,7 @@ jobs:
             const fs = require('fs');
             
             try {
-              const overallContent = fs.readFileSync('/tmp/overall.md', 'utf8');
+              const overallContent = fs.readFileSync('/tmp/review/overall.md', 'utf8');
               
               await github.rest.issues.createComment({
                 issue_number: ${{ env.PR_NUMBER }},
@@ -228,7 +228,7 @@ jobs:
               echo "Processing $(basename "$file")..."
               
               # Submit the comment using curl to GitHub REST API
-              curl -X POST \
+              curl -v -X POST \
                 -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
                 -H "Accept: application/vnd.github.v3+json" \
                 -H "Content-Type: application/json" \
