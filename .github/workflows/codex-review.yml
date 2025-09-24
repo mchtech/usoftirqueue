@@ -123,8 +123,9 @@ jobs:
           FORMATTING GUIDELINES:
           The finding description should be one paragraph.
 
-          OUTPUT FILE:
-          /tmp/review.md
+          OUTPUT:
+          First, refer to the format of #Overall and comment on a separate overall review.
+          Then, refer to the format of #Findings and use the GitHub suggestion comment API to comment on each individual issue.
 
           OUTPUT FORMAT:
 
@@ -138,8 +139,6 @@ jobs:
           <valid Markdown explaining *why* this is a problem; cite files/lines/functions>
 
           - **Confidence Score**: <float 0.0-1.0>
-          - **Code Location**:
-            - https://github.com/<repo name>/blob/<commit hash>/file path#L<start line>-L<end line>
           - **Suggestion**:
           <suggestion blocks>
 
@@ -164,21 +163,21 @@ jobs:
           codex login --api-key "${{ secrets.OPENAI_API_KEY }}"
           codex exec --full-auto --model gpt-5 "$PROMPT"
 
-          echo "✅ RESULT BEGIN"
-          cat /tmp/review.md
-          echo "✅ RESULT END"
+          # echo "✅ RESULT BEGIN"
+          # cat /tmp/review.md
+          # echo "✅ RESULT END"
 
-      # 4. comment to PR
-      - name: Comment on Pull Request with Review Output
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const fs = require('fs');
-            const reviewContent = fs.readFileSync('/tmp/review.md', 'utf8');
+      # # 4. comment to PR
+      # - name: Comment on Pull Request with Review Output
+      #   uses: actions/github-script@v6
+      #   with:
+      #     script: |
+      #       const fs = require('fs');
+      #       const reviewContent = fs.readFileSync('/tmp/review.md', 'utf8');
 
-            await github.rest.issues.createComment({
-              issue_number: ${{ env.PR_NUMBER }},
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: reviewContent
-            });
+      #       await github.rest.issues.createComment({
+      #         issue_number: ${{ env.PR_NUMBER }},
+      #         owner: context.repo.owner,
+      #         repo: context.repo.repo,
+      #         body: reviewContent
+      #       });
