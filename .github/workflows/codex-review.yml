@@ -67,8 +67,7 @@ jobs:
 
           1. You must read the full contents of the /tmp/pr_diff.diff file to understand all the changes introduced by this PR. This ensures no code changes are missed.
           2. You must read the full contents of the /tmp/pr_info.json file to extract the repository name (head.repo.full_name) and commit hash (head.sha).
-          3. Do not pull the latest code or switch branches.
-          4. You need to determine whether the current code in the workspace corresponds to the state before or after /tmp/pr_diff.diff has been applied. This ensures you're working with the correct version of the code.
+          3. Do not pull the latest code or switch branches, and determine whether the current code in the workspace corresponds to the state before or after /tmp/pr_diff.diff has been applied. This ensures you're reviewing the correct version of the code.
 
           Below are some default guidelines for determining whether the original author would appreciate the issue being flagged.
 
@@ -154,9 +153,8 @@ jobs:
           * **Do not** wrap the JSON in markdown fences or extra prose.
           * The code_location field is required and must include absolute_file_path and line_range.
           * Line ranges must be as short as possible for interpreting the issue (avoid ranges over 5–10 lines; pick the most suitable subrange).
-          * If line ranges contains only one line, include the relevant previous and/or next line of code as well.
           * The code_location should overlap with the diff.
-          * Do not generate a PR fix.
+          * Do not generate a PR fix (suggestion blocks can be included in the result).
           "
 
           mkdir -pv ~/.codex/
