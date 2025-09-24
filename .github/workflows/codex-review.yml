@@ -140,7 +140,7 @@ jobs:
 
           - **Confidence Score**: <float 0.0-1.0>
           - **Suggestion**:
-          <suggestion blocks>
+            <suggestion blocks>
 
           ---
 
