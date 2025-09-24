@@ -143,13 +143,12 @@ jobs:
 
           \`\`\`json
           {
-            \"text\": \"<Finding format>\",
-            \"line\": <line_number>,
+            \"body\": \"<Finding format>\",
+            \"commit_id\": \"<commit_sha>\",
             \"path\": \"<file_path>\",
-            \"side\": \"right\",
-            \"startSide\": \"right\",
-            \"submitBatch\": true,
-            \"startLine\": <start_line_number>
+            \"line\": <line_number>,
+            \"side\": \"RIGHT\",
+            \"start_line\": <start_line_number>
           }
           \`\`\`
 
@@ -165,14 +164,20 @@ jobs:
 
           IMPORTANT NOTES:
           - Each finding gets its own JSON file (1.json, 2.json, 3.json, etc.)
-          - The \"text\" field should contain the complete finding description in Finding format, and escape to json string
+          - The \"body\" field should contain the complete finding description in Finding format, properly escaped as a JSON string
+          - CRITICAL: All special characters in the body must be properly escaped for JSON:
+            * Double quotes \" must be escaped as \\\"
+            * Backslashes \\ must be escaped as \\\\
+            * Newlines \\n must be escaped as \\\\n
+            * Tabs \\t must be escaped as \\\\t
           - Use \\\`\\\`\\\`suggestion blocks for concrete replacement code
-          - \"line\" and \"startLine\" should be the same for single-line comments
+          - \"commit_id\" should be the SHA of the commit being reviewed (extract from /tmp/pr_info.json)
           - \"path\" should be the relative file path from the repository root
-          - \"side\" and \"startSide\" should always be \"right\" for new code
-          - \"submitBatch\" should always be true
+          - \"side\" should always be \"RIGHT\" for new code
+          - \"line\" should be the line number in the new version of the file
+          - \"start_line\" should be the starting line number (same as \"line\" for single-line comments)
           - If there are no findings, only create /tmp/review/overall.md
-          - The text should follow the exact Finding format with priority tags, confidence scores, and code locations
+          - The body should follow the exact Finding format with priority tags, confidence scores, and code locations
           "
 
           mkdir -pv ~/.codex/ /tmp/review/
@@ -223,7 +228,7 @@ jobs:
           
           echo "Submitting individual review comments..."
           
-          for file in /tmp/*.json; do
+          for file in /tmp/review/*.json; do
             if [ -f "$file" ]; then
               echo "Processing $(basename "$file")..."
               
@@ -233,7 +238,7 @@ jobs:
                 -H "Accept: application/vnd.github.v3+json" \
                 -H "Content-Type: application/json" \
                 -d @"$file" \
-                "https://api.github.com/repos/${{ github.repository_owner }}/${{ github.event.repository.name }}/pulls/${{ env.PR_NUMBER }}/comments"
+                "https://api.github.com/repos/${{ github.repository }}/pulls/${{ env.PR_NUMBER }}/comments"
               
               echo "✅ Comment submitted from $(basename "$file")"
             fi
