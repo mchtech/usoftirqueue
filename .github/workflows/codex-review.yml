@@ -141,7 +141,7 @@ jobs:
           - **Code Location**:
             - https://github.com/<repo name>/blob/<commit hash>/file path#L<start line>-L<end line>
           - **Suggestion**:
-          <suggestion blocks, optional>
+          <suggestion blocks>
 
           ---
 
