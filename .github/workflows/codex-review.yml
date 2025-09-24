@@ -43,7 +43,7 @@ jobs:
           npm install -g @openai/codex
 
       # 3. Review the commit using Codex
-      - name: Run Codex Review on Commit
+      - name: Run Codex Review on PR
         run: |
           set -e -o pipefail
 
