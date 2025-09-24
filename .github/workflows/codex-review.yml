@@ -123,10 +123,6 @@ jobs:
           FORMATTING GUIDELINES:
           The finding description should be one paragraph.
 
-          OUTPUT:
-          First, refer to the format of #Overall and comment on a separate overall review.
-          Then, refer to the format of #Findings and use the GitHub suggestion comment API to comment on each individual issue.
-
           OUTPUT FORMAT:
 
           ## Output schema  — MUST MATCH *exactly*
@@ -156,6 +152,11 @@ jobs:
           * Line ranges must be as short as possible for interpreting the issue (avoid ranges over 5–10 lines; pick the most suitable subrange).
           * The code_location should overlap with the diff.
           * Do not generate a PR fix.
+
+          OUTPUT:
+          You must call github comment API to output results.
+          First, refer to the format of #Overall and comment on a separate overall review.
+          Then, refer to the format of #Findings and use the GitHub suggestion comment API to comment on each individual issue.
           "
 
           mkdir -pv ~/.codex/
