@@ -123,28 +123,15 @@ jobs:
           FORMATTING GUIDELINES:
           The finding description should be one paragraph.
 
-          OUTPUT FILE:
-          /tmp/review.md
+          OUTPUT FILES:
+          1. /tmp/review/overall.md - Contains the overall review summary
+          2. /tmp/review/1.json, /tmp/review/2.json, /tmp/review/3.json, etc. - Individual review comments
 
           OUTPUT FORMAT:
 
-          ## Output schema  — MUST MATCH *exactly*
+          First, output the overall review summary to /tmp/review/overall.md in this format:
 
           \`\`\`markdown
-          # Findings
-
-          ## P<int 0-3, optional> <≤ Title: 80 chars, imperative>
-
-          <valid Markdown explaining *why* this is a problem; cite files/lines/functions>
-
-          - **Confidence Score**: <float 0.0-1.0>
-          - **Code Location**:
-            - https://github.com/<repo name>/blob/<commit hash>/file path#L<start line>-L<end line>
-          - **Suggestion**:
-            <suggestion blocks>
-
-          ---
-
           # Overall
 
           - **Correctness**: \`patch is correct\` | \`patch is incorrect\`
@@ -152,33 +139,104 @@ jobs:
           - **Confidence Score**: <float 0.0-1.0>
           \`\`\`
 
-          * **Do not** wrap the JSON in markdown fences or extra prose.
-          * The code_location field is required and must include absolute_file_path and line_range.
-          * Line ranges must be as short as possible for interpreting the issue (avoid ranges over 5–10 lines; pick the most suitable subrange).
-          * The code_location should overlap with the diff.
-          * Do not generate a PR fix.
+          Then, for each finding, create a separate JSON file (/tmp/review/1.json, /tmp/review/2.json, etc.) with this exact format:
+
+          \`\`\`json
+          {
+            \"text\": \"<Finding format>\",
+            \"line\": <line_number>,
+            \"path\": \"<file_path>\",
+            \"side\": \"right\",
+            \"startSide\": \"right\",
+            \"submitBatch\": true,
+            \"startLine\": <start_line_number>
+          }
+          \`\`\`
+
+          Finding format:
+          \`\`\`markdown
+          ## P<int 0-3, optional> <≤ Title: 80 chars, imperative>
+
+          <valid Markdown explaining *why* this is a problem; cite files/lines/functions>
+
+          - **Confidence Score**: <float 0.0-1.0>
+          <suggestion blocks>
+          \`\`\`
+
+          IMPORTANT NOTES:
+          - Each finding gets its own JSON file (1.json, 2.json, 3.json, etc.)
+          - The \"text\" field should contain the complete finding description in Finding format
+          - Use \\\`\\\`\\\`suggestion blocks for concrete replacement code
+          - \"line\" and \"startLine\" should be the same for single-line comments
+          - \"path\" should be the relative file path from the repository root
+          - \"side\" and \"startSide\" should always be \"right\" for new code
+          - \"submitBatch\" should always be true
+          - If there are no findings, only create /tmp/review/overall.md
+          - The text should follow the exact Finding format with priority tags, confidence scores, and code locations
           "
 
-          mkdir -pv ~/.codex/
+          mkdir -pv ~/.codex/ /tmp/review/
           # echo "$CODEX_AUTH_JSON" >> ~/.codex/auth.json
           codex login --api-key "${{ secrets.OPENAI_API_KEY }}"
           codex exec --full-auto --model gpt-5 "$PROMPT"
 
-          echo "✅ RESULT BEGIN"
-          cat /tmp/review.md
-          echo "✅ RESULT END"
+          echo "✅ OVERALL RESULT BEGIN"
+          cat /tmp/review/overall.md
+          echo "✅ OVERALL RESULT END"
 
-      # 4. comment to PR
-      - name: Comment on Pull Request with Review Output
+          echo "✅ REVIEW COMMENTS BEGIN"
+          for file in /tmp/review/*.json; do
+            if [ -f "$file" ]; then
+              echo "=== $(basename "$file") ==="
+              cat "$file"
+              echo ""
+            fi
+          done
+          echo "✅ REVIEW COMMENTS END"
+
+      # 4. Submit overall review summary as PR comment
+      - name: Comment Overall Review Summary
         uses: actions/github-script@v6
         with:
           script: |
             const fs = require('fs');
-            const reviewContent = fs.readFileSync('/tmp/review.md', 'utf8');
+            
+            try {
+              const overallContent = fs.readFileSync('/tmp/overall.md', 'utf8');
+              
+              await github.rest.issues.createComment({
+                issue_number: ${{ env.PR_NUMBER }},
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: overallContent
+              });
+              
+              console.log('✅ Overall review summary posted as PR comment');
+            } catch (error) {
+              console.error('❌ Failed to post overall review summary:', error.message);
+            }
 
-            await github.rest.issues.createComment({
-              issue_number: ${{ env.PR_NUMBER }},
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: reviewContent
-            });
+      # 5. Submit individual review comments using GitHub REST API
+      - name: Submit Individual Review Comments
+        run: |
+          set -e
+          
+          echo "Submitting individual review comments..."
+          
+          for file in /tmp/*.json; do
+            if [ -f "$file" ]; then
+              echo "Processing $(basename "$file")..."
+              
+              # Submit the comment using curl to GitHub REST API
+              curl -X POST \
+                -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+                -H "Accept: application/vnd.github.v3+json" \
+                -H "Content-Type: application/json" \
+                -d @"$file" \
+                "https://api.github.com/repos/${{ github.repository_owner }}/${{ github.event.repository.name }}/pulls/${{ env.PR_NUMBER }}/comments"
+              
+              echo "✅ Comment submitted from $(basename "$file")"
+            fi
+          done
+          
+          echo "All review comments submitted successfully"
