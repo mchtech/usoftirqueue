@@ -156,10 +156,7 @@ jobs:
           ## P<≤priority: int 0-3, optional> <≤ Title: 80 chars, imperative>
 
           <valid Markdown explaining *why* this is a problem; cite files/lines/functions>
-
-          **Confidence Score**: <float 0.0-1.0>
-
-          <replacement code>
+          <suggestion blocks for replacement code>
           \`\`\`
 
           IMPORTANT NOTES:
