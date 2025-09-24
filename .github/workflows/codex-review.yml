@@ -157,7 +157,8 @@ jobs:
 
           <valid Markdown explaining *why* this is a problem; cite files/lines/functions>
 
-          - **Confidence Score**: <float 0.0-1.0>
+          **Confidence Score**: <float 0.0-1.0>
+
           <replacement code>
           \`\`\`
 
@@ -203,18 +204,19 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            
+
             try {
-              const overallContent = fs.readFileSync('/tmp/review/overall.md', 'utf8');
-              
-              await github.rest.issues.createComment({
+              const response = await github.rest.issues.createComment({
                 issue_number: ${{ env.PR_NUMBER }},
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                body: overallContent
+                body: fs.readFileSync('/tmp/review/overall.md', 'utf8')
               });
               
-              console.log('✅ Overall review summary posted as PR comment');
+              // Save the comment ID for later use
+              fs.writeFileSync('/tmp/overall_comment_id.txt', response.data.id.toString());
+              
+              console.log('✅ Overall review summary posted as PR comment with ID:', response.data.id);
             } catch (error) {
               console.error('❌ Failed to post overall review summary:', error.message);
             }
@@ -222,24 +224,35 @@ jobs:
       # 5. Submit individual review comments using GitHub REST API
       - name: Submit Individual Review Comments
         run: |
-          set -e
-          
+          set -e -o pipefail
+
           echo "Submitting individual review comments..."
-          
+
+          # Read the overall comment ID
+          OVERALL_COMMENT_ID=$(cat /tmp/overall_comment_id.txt)
+          [ -z "$OVERALL_COMMENT_ID" ] && echo "No overall comment ID found, skipping individual comments" && exit 1
+          echo "Using overall comment ID: $OVERALL_COMMENT_ID"
+
           for file in /tmp/review/*.json; do
             if [ -f "$file" ]; then
               echo "Processing $(basename "$file")..."
               
+              # Add in_reply_to to the JSON
+              jq --arg reply_to "$OVERALL_COMMENT_ID" '. + {"in_reply_to": ($reply_to | tonumber)}' "$file" > /tmp/temp_comment.json
+              
               # Submit the comment using curl to GitHub REST API
-              curl -v -X POST \
+              curl -f -X POST \
                 -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
                 -H "Accept: application/vnd.github.v3+json" \
                 -H "Content-Type: application/json" \
-                -d @"$file" \
+                -d @/tmp/temp_comment.json \
                 "https://api.github.com/repos/${{ github.repository }}/pulls/${{ env.PR_NUMBER }}/comments"
+              
+              # Clean up temp file
+              rm -f /tmp/temp_comment.json
               
               echo "✅ Comment submitted from $(basename "$file")"
             fi
           done
-          
+
           echo "All review comments submitted successfully"
