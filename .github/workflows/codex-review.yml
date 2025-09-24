@@ -206,17 +206,14 @@ jobs:
             const fs = require('fs');
 
             try {
-              const response = await github.rest.issues.createComment({
+              await github.rest.issues.createComment({
                 issue_number: ${{ env.PR_NUMBER }},
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 body: fs.readFileSync('/tmp/review/overall.md', 'utf8')
               });
               
-              // Save the comment ID for later use
-              fs.writeFileSync('/tmp/overall_comment_id.txt', response.data.id.toString());
-              
-              console.log('✅ Overall review summary posted as PR comment with ID:', response.data.id);
+              console.log('✅ Overall review summary posted as PR comment');
             } catch (error) {
               console.error('❌ Failed to post overall review summary:', error.message);
             }
@@ -228,28 +225,17 @@ jobs:
 
           echo "Submitting individual review comments..."
 
-          # Read the overall comment ID
-          OVERALL_COMMENT_ID=$(cat /tmp/overall_comment_id.txt)
-          [ -z "$OVERALL_COMMENT_ID" ] && echo "No overall comment ID found, skipping individual comments" && exit 1
-          echo "Using overall comment ID: $OVERALL_COMMENT_ID"
-
           for file in /tmp/review/*.json; do
             if [ -f "$file" ]; then
               echo "Processing $(basename "$file")..."
-              
-              # Add in_reply_to to the JSON
-              jq --arg reply_to "$OVERALL_COMMENT_ID" '. + {"in_reply_to": ($reply_to | tonumber)}' "$file" > /tmp/temp_comment.json
               
               # Submit the comment using curl to GitHub REST API
               curl -f -X POST \
                 -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
                 -H "Accept: application/vnd.github.v3+json" \
                 -H "Content-Type: application/json" \
-                -d @/tmp/temp_comment.json \
+                -d @"$file" \
                 "https://api.github.com/repos/${{ github.repository }}/pulls/${{ env.PR_NUMBER }}/comments"
-              
-              # Clean up temp file
-              rm -f /tmp/temp_comment.json
               
               echo "✅ Comment submitted from $(basename "$file")"
             fi
