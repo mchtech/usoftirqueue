@@ -11,228 +11,86 @@ on:
 
 jobs:
   review:
-    if: |
-      (
-        github.event.pull_request != null && (
-          github.event.action == 'opened' || 
-          github.event.action == 'reopened' || 
-          github.event.action == 'synchronize'
-        )
-      ) || (
-        github.event.issue.pull_request != null && 
-        startsWith(github.event.comment.body, '/review')
-      )
+    # if: |
+    #   (
+    #     github.event.pull_request != null && (
+    #       github.event.action == 'opened' ||
+    #       github.event.action == 'reopened' ||
+    #       github.event.action == 'synchronize'
+    #     )
+    #   ) || (
+    #     github.event.issue.pull_request != null &&
+    #     startsWith(github.event.comment.body, '/review')
+    #   )
     runs-on: ubuntu-latest
     permissions:
       contents: read # Ensure the action has access to read PR content
-      pull-requests: write # Ensure the action can read and interact with PRs
-
+      # pull-requests: write # Ensure the action can read and interact with PRs
+    outputs:
+      final_message: ${{ steps.run_codex.outputs.final-message }}
     steps:
-      # 1. Checkout the code
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      # 2. Install Node.js and Codex CLI
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
+      - uses: actions/checkout@v5
         with:
-          node-version: "22"
+          # Explicitly check out the PR's merge commit.
+          ref: refs/pull/${{ github.event.pull_request.number }}/merge
 
-      - name: Install Codex CLI
+      - name: Pre-fetch base and head refs for the PR
         run: |
-          npm install -g @openai/codex
+          git fetch --no-tags origin \
+            ${{ github.event.pull_request.base.ref }} \
+            +refs/pull/${{ github.event.pull_request.number }}/head
 
-      # 3. Review the commit using Codex
-      - name: Run Codex Review on PR
-        run: |
-          set -e -o pipefail
+      # If you want Codex to build and run code, install any dependencies that
+      # need to be downloaded before the "Run Codex" step because Codex's
+      # default sandbox disables network access.
 
-          PR_NUMBER="${{ github.event.pull_request.number || github.event.issue.number }}"
-          [[ -z "$PR_NUMBER" ]] && echo "failed to get PR number" && exit 1
-          echo "PR_NUMBER=$PR_NUMBER"
-          echo "PR_NUMBER=$PR_NUMBER" >> $GITHUB_ENV
-
-          curl -f -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" -H "Accept: application/vnd.github.v3.diff" -o /tmp/pr_diff.diff \
-            "https://api.github.com/repos/${{ github.repository_owner }}/${{ github.event.repository.name }}/pulls/${PR_NUMBER}"
-
-          curl -f -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" -o /tmp/pr_info.json \
-            "https://api.github.com/repos/${{ github.repository_owner }}/${{ github.event.repository.name }}/pulls/${PR_NUMBER}"
-
-          PROMPT="
-          # Review guidelines:
-
-          You are acting as a reviewer for a proposed code change made by another engineer.
-
-          Due to operating within a GitHub Action environment, triggered by a PR event or comment command, you need to follow these guidelines:
-
-          1. You must read the full contents of the /tmp/pr_diff.diff file to understand all the changes introduced by this PR. This ensures no code changes are missed.
-          2. You must read the full contents of the /tmp/pr_info.json file to extract the repository name (head.repo.full_name) and commit hash (head.sha).
-          3. Do not pull the latest code or switch branches, and determine whether the current code in the workspace corresponds to the state before or after /tmp/pr_diff.diff has been applied. This ensures you're reviewing the correct version of the code.
-
-          Below are some default guidelines for determining whether the original author would appreciate the issue being flagged.
-
-          These are not the final word in determining whether an issue is a bug. In many cases, you will encounter other, more specific guidelines. These may be present elsewhere in a developer message, a user message, a file, or even elsewhere in this system message.
-          Those guidelines should be considered to override these general instructions.
-
-          Here are the general guidelines for determining whether something is a bug and should be flagged.
-
-          1. It meaningfully impacts the accuracy, performance, security, or maintainability of the code.
-          2. The bug is discrete and actionable (i.e. not a general issue with the codebase or a combination of multiple issues).
-          3. Fixing the bug does not demand a level of rigor that is not present in the rest of the codebase (e.g. one doesn't need very detailed comments and input validation in a repository of one-off scripts in personal projects)
-          4. The bug was introduced in the commit (pre-existing bugs should not be flagged).
-          5. The author of the original PR would likely fix the issue if they were made aware of it.
-          6. The bug does not rely on unstated assumptions about the codebase or author's intent.
-          7. It is not enough to speculate that a change may disrupt another part of the codebase, to be considered a bug, one must identify the other parts of the code that are provably affected.
-          8. The bug is clearly not just an intentional change by the original author.
-
-          When flagging a bug, you will also provide an accompanying comment. Once again, these guidelines are not the final word on how to construct a comment -- defer to any subsequent guidelines that you encounter.
-
-          1. The comment should be clear about why the issue is a bug.
-          2. The comment should appropriately communicate the severity of the issue. It should not claim that an issue is more severe than it actually is.
-          3. The comment should be brief. The body should be at most 1 paragraph. It should not introduce line breaks within the natural language flow unless it is necessary for the code fragment.
-          4. The comment should not include any chunks of code longer than 3 lines. Any code chunks should be wrapped in markdown inline code tags or a code block.
-          5. The comment should clearly and explicitly communicate the scenarios, environments, or inputs that are necessary for the bug to arise. The comment should immediately indicate that the issue's severity depends on these factors.
-          6. The comment's tone should be matter-of-fact and not accusatory or overly positive. It should read as a helpful AI assistant suggestion without sounding too much like a human reviewer.
-          7. The comment should be written such that the original author can immediately grasp the idea without close reading.
-          8. The comment should avoid excessive flattery and comments that are not helpful to the original author. The comment should avoid phrasing like \"Great job ...\", \"Thanks for ...\".
-
-          Below are some more detailed guidelines that you should apply to this specific review.
-
-          HOW MANY FINDINGS TO RETURN:
-
-          Output all findings that the original author would fix if they knew about it. If there is no finding that a person would definitely love to see and fix, prefer outputting no findings. Do not stop at the first qualifying finding. Continue until you've listed every qualifying finding.
-
-          GUIDELINES:
-
-          - Ignore trivial style unless it obscures meaning or violates documented standards.
-          - Use one comment per distinct issue (or a multi-line range if necessary).
-          - Use \`\`\`suggestion blocks ONLY for concrete replacement code (minimal lines; no commentary inside the block).
-          - In every \`\`\`suggestion block, preserve the exact leading whitespace of the replaced lines (spaces vs tabs, number of spaces).
-          - Do NOT introduce or remove outer indentation levels unless that is the actual fix.
-
-          The comments will be presented in the code review as inline comments. You should avoid providing unnecessary location details in the comment body. Always keep the line range as short as possible for interpreting the issue. Avoid ranges longer than 5–10 lines; instead, choose the most suitable subrange that pinpoints the problem.
-
-          At the beginning of the finding title, tag the bug with priority level. For example \"[P1] Un-padding slices along wrong tensor dimensions\". [P0] – Drop everything to fix.  Blocking release, operations, or major usage. Only use for universal issues that do not depend on any assumptions about the inputs. · [P1] – Urgent. Should be addressed in the next cycle · [P2] – Normal. To be fixed eventually · [P3] – Low. Nice to have.
-
-          At the end of your findings, output an \"overall correctness\" verdict of whether or not the patch should be considered \"correct\".
-          Correct implies that existing code and tests will not break, and the patch is free of bugs and other blocking issues.
-          Ignore non-blocking issues such as style, formatting, typos, documentation, and other nits.
-
-          FORMATTING GUIDELINES:
-          The finding description should be one paragraph.
-
-          OUTPUT FILES:
-          1. /tmp/review/overall.md - Contains the overall review summary
-          2. /tmp/review/1.json, /tmp/review/2.json, /tmp/review/3.json, etc. - Individual review comments
-
-          OUTPUT FORMAT:
-
-          First, output the overall review summary to /tmp/review/overall.md in this format:
-
-          \`\`\`markdown
-          # Overall
-
-          - **Correctness**: \`patch is correct\` | \`patch is incorrect\`
-          - **Explanation**: <1-3 sentence explanation justifying the overall_correctness verdict>
-          - **Confidence Score**: <float 0.0-1.0>
-          \`\`\`
-
-          Then, for each finding, create a separate JSON file (/tmp/review/1.json, /tmp/review/2.json, etc.) with this exact format:
-
-          \`\`\`json
-          {
-            \"body\": \"<Finding format>\",
-            \"commit_id\": \"<commit_sha>\",
-            \"path\": \"<file_path>\",
-            \"line\": <line_number>,
-            \"start_line\": <start_line_number>
-          }
-          \`\`\`
-
-          Finding format:
-          \`\`\`markdown
-          ## P<≤priority: int 0-3, optional> <≤ Title: 80 chars, imperative>
-          <valid Markdown explaining *why* this is a problem; cite files/lines/functions>
-          <replacement code>
-          \`\`\`
-
-          IMPORTANT NOTES:
-          - Each finding gets its own JSON file (1.json, 2.json, 3.json, etc.)
-          - The \"body\" field should contain the complete finding description in Finding format, properly escaped as a JSON string
-          - CRITICAL: All special characters in the body must be properly escaped for JSON:
-            * Double quotes \" must be escaped as \\\"
-            * Backslashes \\ must be escaped as \\\\
-            * Newlines \\n must be escaped as \\\\n
-            * Tabs \\t must be escaped as \\\\t
-          - Use \\\`\\\`\\\`suggestion blocks for concrete replacement code
-          - \"commit_id\" should be the SHA of the commit being reviewed (extract from /tmp/pr_info.json)
-          - \"path\" should be the relative file path from the repository root
-          - \"line\" should be the line number in the new version of the file
-          - \"start_line\" should be the starting line number (same as \"line\" for single-line comments)
-          - If there are no findings, only create /tmp/review/overall.md
-          - The body should follow the exact Finding format with priority tags, and replacement code
-          "
-
-          mkdir -pv ~/.codex/ /tmp/review/
-          # echo "$CODEX_AUTH_JSON" >> ~/.codex/auth.json
-          codex login --api-key "${{ secrets.OPENAI_API_KEY }}"
-          codex exec --full-auto --model gpt-5 "$PROMPT"
-
-          echo "✅ OVERALL RESULT BEGIN"
-          cat /tmp/review/overall.md
-          echo "✅ OVERALL RESULT END"
-
-          echo "✅ REVIEW COMMENTS BEGIN"
-          for file in /tmp/review/*.json; do
-            if [ -f "$file" ]; then
-              echo "=== $(basename "$file") ==="
-              cat "$file"
-              echo ""
-            fi
-          done
-          echo "✅ REVIEW COMMENTS END"
-
-      # 4. Submit overall review summary as PR comment
-      - name: Comment Overall Review Summary
-        uses: actions/github-script@v6
+      - name: Set up Go
+        uses: actions/setup-go@v5
         with:
+          go-version-file: "go.mod"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run Codex
+        id: run_codex
+        uses: openai/codex-action@v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          prompt: |
+            This is PR #${{ github.event.pull_request.number }} for ${{ github.repository }}.
+
+            Review ONLY the changes introduced by the PR, so consider:
+               git log --oneline ${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}
+
+            Suggest any improvements, potential bugs, or issues.
+            Be concise and specific in your feedback.
+
+            Pull request title and body:
+            ----
+            ${{ github.event.pull_request.title }}
+            ${{ github.event.pull_request.body }}
+
+  post_feedback:
+    runs-on: ubuntu-latest
+    needs: review
+    if: needs.review.outputs.final_message != ''
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Report Codex feedback
+        uses: actions/github-script@v7
+        env:
+          CODEX_FINAL_MESSAGE: ${{ needs.review.outputs.final_message }}
+        with:
+          github-token: ${{ github.token }}
           script: |
-            const fs = require('fs');
-
-            try {
-              await github.rest.issues.createComment({
-                issue_number: ${{ env.PR_NUMBER }},
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: fs.readFileSync('/tmp/review/overall.md', 'utf8')
-              });
-              
-              console.log('✅ Overall review summary posted as PR comment');
-            } catch (error) {
-              console.error('❌ Failed to post overall review summary:', error.message);
-            }
-
-      # 5. Submit individual review comments using GitHub REST API
-      - name: Submit Individual Review Comments
-        run: |
-          set -e -o pipefail
-
-          echo "Submitting individual review comments..."
-
-          for file in /tmp/review/*.json; do
-            if [ -f "$file" ]; then
-              echo "Processing $(basename "$file")..."
-              
-              # Submit the comment using curl to GitHub REST API
-              curl -f -X POST \
-                -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-                -H "Accept: application/vnd.github.v3+json" \
-                -H "Content-Type: application/json" \
-                -d @"$file" \
-                "https://api.github.com/repos/${{ github.repository }}/pulls/${{ env.PR_NUMBER }}/comments"
-              
-              echo "✅ Comment submitted from $(basename "$file")"
-            fi
-          done
-
-          echo "All review comments submitted successfully"
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body: process.env.CODEX_FINAL_MESSAGE,
+            });
