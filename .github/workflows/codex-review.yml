@@ -68,6 +68,9 @@ jobs:
             Suggest any improvements, potential bugs, or issues.
             Be concise and specific in your feedback.
 
+            Output should include code lines with code location:
+            https://github.com/${{ github.repository_owner }}/${{ github.event.repository.name }}/blob/${{ github.event.pull_request.head.sha }}/<file path>#L<start line>-L<end line>
+
             Pull request title and body:
             ----
             ${{ github.event.pull_request.title }}
